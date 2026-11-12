@@ -36805,19 +36805,15 @@ while (n === a[++i] && n === a[++i] && n === a[++i] && n === a[++i] && n === a[+
     const out = [];
     const push = (t, path) => { const s = speakable(t); if (s) out.push({ text: s, path }); };
     if ((report.loai || 'kiemtra') === 'nhanh') {
-      push(`Báo cáo nhanh. ${report.trich_yeu || ''}. Số liệu cập nhật tính đến ${report.cap_nhat || ''}.`, 'trich_yeu');
       let nOk = 0, nBad = 0;
       (report.nhom || []).forEach((g, gi) => (g.tuyen || []).forEach((t, ti) => {
         if (isIncident(t)) { nBad++; push(`${t.ten}: ${t.tinh_hinh}`, `nhom.${gi}.tuyen.${ti}.tinh_hinh`); } else nOk++;
       }));
       if (!nBad) push('Hiện tại trên tất cả các tuyến, giao thông đi lại bình thường.', 'none');
-      else if (nOk) push(`Các tuyến còn lại: hiện tại giao thông đi lại bình thường.`, 'none');
+      else if (nOk) push('Các tuyến còn lại: hiện tại giao thông đi lại bình thường.', 'none');
     } else {
-      push(`Báo cáo. ${report.trich_yeu || ''}.`, 'trich_yeu');
-      (report.muc || []).forEach((m, i) => {
-        push(m.tieu_de, `muc.${i}.tieu_de`);
-        (m.doan || []).forEach((d, j) => push(d, `muc.${i}.doan.${j}`));
-      });
+      // Chỉ đọc các đoạn nội dung: bỏ trích yếu, tiêu đề mục, tiểu mục
+      (report.muc || []).forEach((m, i) => (m.doan || []).forEach((d, j) => { if (!subHeadingLevel(d)) push(d, `muc.${i}.doan.${j}`); }));
     }
     return out;
   }
@@ -37844,7 +37840,7 @@ async function makeMp3(signal) {
   const pcms = []; let rate = 24000;
   for (let i = 0; i < chunks.length; i++) {
     busySub(`Đọc đoạn ${i + 1}/${chunks.length}…`);
-    const body = { contents: [{ role: 'user', parts: [{ text: `Đọc bằng tiếng Việt chuẩn, giọng trang trọng, rõ ràng, tốc độ vừa phải như phát thanh viên đọc văn bản hành chính. Chỉ đọc nội dung sau:\n\n${chunks[i]}` }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: S.voice || 'Kore' } } } } };
+    const body = { contents: [{ role: 'user', parts: [{ text: chunks[i] }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: S.voice || 'Kore' } } } } };
     const { cand } = await gemini(ttsModels(), body, signal, `Đoạn ${i + 1}/${chunks.length}.`);
     const part = (cand.content.parts || []).find(p => p.inlineData && p.inlineData.data);
     if (!part) throw new Error('Mô hình giọng đọc không trả âm thanh.');
