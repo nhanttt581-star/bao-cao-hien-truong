@@ -332,16 +332,22 @@ a.btn{text-decoration:none}
 
   <div class="card">
     <h2>Giọng đọc & ảnh</h2>
-    <label class="f">Giọng AI cho file MP3</label>
+    <label class="f">Giọng đọc file MP3 (gửi lãnh đạo)</label>
     <select id="sVoice">
-      <option value="Kore">Kore – nữ, chắc chắn</option>
-      <option value="Charon">Charon – nam, trầm rõ</option>
-      <option value="Orus">Orus – nam, rắn rỏi</option>
-      <option value="Aoede">Aoede – nữ, nhẹ nhàng</option>
-      <option value="Puck">Puck – nam, tươi</option>
+      <option value="Charon">Nam – phát thanh viên, trầm ấm (khuyên dùng)</option>
+      <option value="Iapetus">Nam – rõ ràng, sáng giọng</option>
+      <option value="Rasalgethi">Nam – chững chạc, thông tin</option>
+      <option value="Kore">Nữ – chắc giọng, dứt khoát</option>
+      <option value="Erinome">Nữ – rõ ràng, nhẹ nhàng</option>
+      <option value="Aoede">Nữ – tự nhiên, mềm</option>
     </select>
-    <label class="f">Tốc độ đọc trên máy (nút 🔊)</label>
-    <select id="sRate"><option value="0.85">Chậm</option><option value="1" selected>Bình thường</option><option value="1.15">Nhanh</option><option value="1.3">Rất nhanh</option></select>
+    <label class="f">Nhịp đọc file MP3</label>
+    <select id="sPace"><option value="normal">Vừa phải</option><option value="brisk" selected>Nhanh như đọc thời sự (khuyên dùng)</option><option value="fast">Rất nhanh</option></select>
+    <button class="btn pri blk" id="btnVoiceTest" style="margin-top:10px">▶ Nghe thử giọng này</button>
+    <audio id="voiceTestPlayer" controls style="display:none"></audio>
+    <div class="hint">Mỗi lần nghe thử dùng 1 lượt AI miễn phí. Đổi giọng xong, báo cáo đang làm cần bấm “↻ Tạo lại file” ở bước 3.</div>
+    <label class="f">Tốc độ nút 🔊 Nghe (giọng có sẵn của máy)</label>
+    <select id="sRate"><option value="0.9">Chậm</option><option value="1">Bình thường</option><option value="1.15" selected>Nhanh</option><option value="1.3">Rất nhanh</option></select>
     <label class="f"><input type="checkbox" id="sStamp" checked> In giờ chụp + tọa độ GPS lên ảnh</label>
   </div>
 
@@ -36890,10 +36896,11 @@ const DEF = {
   trichYeuNhanh: 'Tình hình mưa lũ gây ngập lụt, hư hỏng các công trình giao thông trên địa bàn tỉnh',
   chiDao: DEF_CHIDAO, ketLuanNhanh: 'Trên đây là báo cáo của Ban QLBT đường bộ, kính đề nghị Sở Xây dựng xem xét, chỉ đạo thực hiện./.',
   routes: DEF_ROUTES, lastLoai: 'nhanh',
-  voice: 'Kore', rate: '1', stamp: true, model: 'auto', ttsModel: 'auto', models: null, ttsModels: null
+  voice: 'Charon', pace: 'brisk', rate: '1.15', stamp: true, model: 'auto', ttsModel: 'auto', models: null, ttsModels: null
 };
 let S = Object.assign({}, DEF);
 try { Object.assign(S, JSON.parse(localStorage.getItem(SKEY) || '{}')); } catch (e) { }
+try { if (!JSON.parse(localStorage.getItem(SKEY) || '{}').pace) { S.voice = 'Charon'; S.pace = 'brisk'; if (S.rate === '1') S.rate = '1.15'; } } catch (e) { }
 const saveS = () => { try { localStorage.setItem(SKEY, JSON.stringify(S)); } catch (e) { } };
 
 /* ---------------- Lưu trữ (IndexedDB) ---------------- */
@@ -37824,7 +37831,7 @@ function ttsChunks(segs, max = 1400) {
   const out = []; let cur = '';
   for (const s of segs) { const t = s.text; if (cur && (cur.length + t.length + 2) > max) { out.push(cur); cur = ''; }
     if (t.length > max) { for (const x of splitSentences(t)) { if (cur && cur.length + x.length > max) { out.push(cur); cur = ''; } cur = cur ? cur + ' ' + x : x; } }
-    else cur = cur ? cur + '\n\n' + t : t; }
+    else cur = cur ? cur + '\n' + t : t; }
   if (cur) out.push(cur); return out;
 }
 function pcmFromPart(part) {
@@ -37833,24 +37840,47 @@ function pcmFromPart(part) {
   if (/wav/i.test(mt) && bin.slice(0, 4) === 'RIFF') { rate = new DataView(u8.buffer).getUint32(24, true); off = 44; }
   return { pcm: new Int16Array(u8.buffer.slice(off, off + ((u8.length - off) & ~1))), rate };
 }
-async function makeMp3(signal) {
-  if (C.mp3Id && !C.mp3Stale) { const b = await getBlob(C.mp3Id); if (b) return b; }
-  const segs = DocBuild.speechSegments(C.report, S);
-  const chunks = ttsChunks(segs);
+const PACE = {
+  normal: 'at a natural, steady pace',
+  brisk: 'at a brisk television-news pace, fluent and without long pauses',
+  fast: 'at a fast, energetic news-bulletin pace, fluent and without pauses'
+};
+function ttsBody(text) {
+  const style = `Read aloud in Vietnamese as a professional national television news anchor: natural, warm, confident and clear, with correct Vietnamese tones, ${PACE[S.pace] || PACE.brisk}`;
+  return { contents: [{ role: 'user', parts: [{ text: `${style}:\n${text}` }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: S.voice || 'Charon' } } } } };
+}
+function trimSilence(p, rate) {
+  const th = 500, pad = Math.round(rate * 0.08); let a = 0, b = p.length - 1;
+  while (a < p.length && Math.abs(p[a]) < th) a++;
+  while (b > a && Math.abs(p[b]) < th) b--;
+  return a >= b ? p : p.subarray(Math.max(0, a - pad), Math.min(p.length, b + pad));
+}
+async function ttsToBlob(texts, signal, labelFn) {
   const pcms = []; let rate = 24000;
-  for (let i = 0; i < chunks.length; i++) {
-    busySub(`Đọc đoạn ${i + 1}/${chunks.length}…`);
-    const body = { contents: [{ role: 'user', parts: [{ text: chunks[i] }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: S.voice || 'Kore' } } } } };
-    const { cand } = await gemini(ttsModels(), body, signal, `Đoạn ${i + 1}/${chunks.length}.`);
+  for (let i = 0; i < texts.length; i++) {
+    if (labelFn) labelFn(i, texts.length);
+    const { cand } = await gemini(ttsModels(), ttsBody(texts[i]), signal, `Đoạn ${i + 1}/${texts.length}.`);
     const part = (cand.content.parts || []).find(p => p.inlineData && p.inlineData.data);
-    if (!part) throw new Error('Mô hình giọng đọc không trả âm thanh.');
-    const r = pcmFromPart(part); rate = r.rate; pcms.push(r.pcm); pcms.push(new Int16Array(Math.round(rate * 0.6)));
+    if (!part) throw new Error('Giọng AI không trả âm thanh, thử lại sau ít phút.');
+    const r = pcmFromPart(part); rate = r.rate; pcms.push(trimSilence(r.pcm, rate)); if (i < texts.length - 1) pcms.push(new Int16Array(Math.round(rate * 0.35)));
   }
   const total = pcms.reduce((a, p) => a + p.length, 0); const all = new Int16Array(total); let o = 0; for (const p of pcms) { all.set(p, o); o += p.length; }
-  busySub('Đang nén MP3…');
-  let blob;
-  if (await loadLame()) blob = encodeMp3(all, rate, 64);
-  else { blob = encodeWav(all, rate); toast('Không tải được bộ nén MP3 — xuất dạng WAV.', 4000); }
+  return (await loadLame()) ? encodeMp3(all, rate, 64) : encodeWav(all, rate);
+}
+$('#btnVoiceTest').onclick = async () => {
+  readSettingsUI(); saveS();
+  if (!S.key) return toast('Cần kết nối AI trước.');
+  const signal = busy('Đang tạo giọng nghe thử…', '');
+  try {
+    const blob = await ttsToBlob(['Hiện tại vị trí từ ki lô mét 19 cộng 600 đến ki lô mét 19 cộng 700, nước tràn qua đường khoảng 7 xăng ti mét. Ban quản lý bảo trì đường bộ đang phối hợp với chính quyền địa phương cảnh báo người và phương tiện lưu thông an toàn.'], signal);
+    done(); const a = $('#voiceTestPlayer'); a.src = URL.createObjectURL(blob); a.style.display = ''; a.play().catch(() => { });
+  } catch (e) { done(); if (!/hủy/.test(e.message)) showErr(e); }
+};
+async function makeMp3(signal) {
+  if (C.mp3Id && !C.mp3Stale) { const b = await getBlob(C.mp3Id); if (b) return b; }
+  const chunks = ttsChunks(DocBuild.speechSegments(C.report));
+  const blob = await ttsToBlob(chunks, signal, (i, n) => busySub(`Đọc đoạn ${i + 1}/${n}…`));
+  if (blob.type === 'audio/wav') toast('Không tải được bộ nén MP3 — xuất dạng WAV.', 4000);
   if (C.mp3Id) await delBlob(C.mp3Id);
   C.mp3Id = uid(); await putBlob(C.mp3Id, blob); C.mp3Stale = false; await saveCase();
   return blob;
@@ -37978,7 +38008,7 @@ $('#btnCases').onclick = async () => {
 $('#casesClose').onclick = () => $('#dlgCases').classList.remove('on');
 
 /* ---------------- Cài đặt ---------------- */
-const SF = { sKey: 'key', sOrgParent: 'orgParent', sOrgName: 'orgName', sOrgCode: 'orgCode', sPlace: 'place', sRecipients: 'recipients', sCc: 'cc', sSignerName: 'signerName', sSignerTitle: 'signerTitle', sContext: 'context', sRoutes: 'routes', sChiDao: 'chiDao', sKetLuanNhanh: 'ketLuanNhanh', sTrichYeuNhanh: 'trichYeuNhanh', sVoice: 'voice', sRate: 'rate' };
+const SF = { sKey: 'key', sOrgParent: 'orgParent', sOrgName: 'orgName', sOrgCode: 'orgCode', sPlace: 'place', sRecipients: 'recipients', sCc: 'cc', sSignerName: 'signerName', sSignerTitle: 'signerTitle', sContext: 'context', sRoutes: 'routes', sChiDao: 'chiDao', sKetLuanNhanh: 'ketLuanNhanh', sTrichYeuNhanh: 'trichYeuNhanh', sVoice: 'voice', sPace: 'pace', sRate: 'rate' };
 function fillModelSelects() {
   const opt = (l, cur) => `<option value="auto">Tự động</option>` + (l || []).map(m => `<option ${m === cur ? 'selected' : ''}>${esc(m)}</option>`).join('');
   $('#sModel').innerHTML = opt(S.models || FALLBACK_TEXT, S.model); $('#sTtsModel').innerHTML = opt(S.ttsModels || FALLBACK_TTS, S.ttsModel);
