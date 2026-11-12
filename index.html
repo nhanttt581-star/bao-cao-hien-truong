@@ -220,7 +220,7 @@ a.btn{text-decoration:none}
     <a class="btn pri big blk" id="wGet" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">① Lấy mã miễn phí từ Google</a>
     <div class="hint" style="text-align:left;margin:6px 4px 14px">Trang Google mở ra: đăng nhập Gmail → bấm <b>Create API key</b> → bấm <b>Copy</b> → quay lại đây.</div>
     <label class="f" style="text-align:left">② Dán mã vào đây</label>
-    <div class="row"><input type="text" id="wKey" placeholder="Mã bắt đầu bằng AIza…" autocomplete="off" style="flex:1"><button class="btn" id="wPaste">📋 Dán</button></div>
+    <div class="row"><input type="text" id="wKey" placeholder="Dán mã từ trang Google" autocomplete="off" style="flex:1"><button class="btn" id="wPaste">📋 Dán</button></div>
     <button class="btn grn big blk" id="wDone" style="margin-top:12px">③ Xong – bắt đầu dùng</button>
     <div id="wMsg" style="margin-top:10px"></div>
     <button class="btn blk" id="wSkip" style="background:none;margin-top:4px;font-weight:600;color:var(--muted)">Xem thử trước, kết nối sau</button>
@@ -294,13 +294,9 @@ a.btn{text-decoration:none}
   <div class="card">
     <div class="row" style="margin-bottom:10px"><button class="btn sm" id="btnSetBack">← Quay lại</button></div>
     <h2>Kết nối AI (mã miễn phí của Google)</h2>
-    <ol class="steps">
-      <li>Mở <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>, đăng nhập Gmail.</li>
-      <li>Bấm <b>Create API key</b> → sao chép.</li>
-      <li>Dán vào ô dưới → <b>Kiểm tra</b>.</li>
-    </ol>
+    <div class="hint" style="margin-bottom:6px">Lấy mã tại <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> → bấm nút sao chép cạnh mã → dán vào ô dưới.</div>
     <label class="f">Mã AI</label>
-    <input type="password" id="sKey" placeholder="AIza…" autocomplete="off">
+    <input type="password" id="sKey" placeholder="Dán mã từ trang Google" autocomplete="off">
     <div class="row" style="margin-top:8px"><button class="btn pri" id="btnTest" style="flex:1">Kiểm tra mã</button><button class="btn" id="btnShowKey">👁</button></div>
     <div id="keyMsg" style="margin-top:8px"></div>
     <div class="card" style="background:#f0f6ff;box-shadow:none;margin:12px 0 4px">
@@ -36979,7 +36975,7 @@ $('#wSkip').onclick = () => showTab('field');
 $('#wDone').onclick = async () => {
   const key = $('#wKey').value.trim().replace(/\s+/g, '');
   if (!key) { $('#wMsg').innerHTML = '<div class="warn">Chưa có mã. Bấm ① để lấy mã, rồi dán vào ô ②.</div>'; return; }
-  if (!/^AIza/.test(key)) { $('#wMsg').innerHTML = '<div class="warn">Mã chưa đúng: mã đúng bắt đầu bằng <b>AIza</b>. Hãy sao chép lại từ trang Google.</div>'; return; }
+  if (key.length < 20 || /\s/.test(key)) { $('#wMsg').innerHTML = '<div class="warn">Mã chưa đúng. Hãy bấm nút sao chép (2 ô vuông) cạnh mã trên trang Google rồi dán lại.</div>'; return; }
   $('#wMsg').innerHTML = '<div class="muted">Đang kiểm tra…</div>';
   try {
     const { text, tts } = await listModels(key);
@@ -37970,7 +37966,7 @@ $('#btnTest').onclick = async () => {
   try {
     const { text, tts } = await listModels(key);
     S.key = key; if (text.length) S.models = text; if (tts.length) S.ttsModels = tts; saveS(); fillModelSelects(); renderHeader();
-    $('#keyMsg').innerHTML = `<div class="ok">✅ Khóa dùng được. Soạn văn bản: <b>${esc(textModels()[0])}</b>; giọng đọc: <b>${esc(ttsModels()[0])}</b>.</div>`;
+    $('#keyMsg').innerHTML = `<div class="ok">✅ Mã dùng được. Soạn văn bản: <b>${esc(textModels()[0])}</b>; giọng đọc: <b>${esc(ttsModels()[0])}</b>.</div>`;
   } catch (e) { $('#keyMsg').innerHTML = `<div class="err">${esc(e.message)}</div>`; }
 };
 
@@ -37992,7 +37988,7 @@ function takeKeyFromLink() {
   if (!m) return false;
   const key = decodeURIComponent(m[1]).trim();
   try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; }
-  if (!/^AIza[\w-]{20,}$/.test(key)) { toast('Link cài sẵn bị lỗi mã — nhờ người gửi tạo lại link.', 6000); return false; }
+  if (!/^[\w.\-]{20,}$/.test(key)) { toast('Link cài sẵn bị lỗi mã — nhờ người gửi tạo lại link.', 6000); return false; }
   S.key = key; saveS(); loadSettingsUI();
   listModels(key).then(({ text, tts }) => { if (text.length) S.models = text; if (tts.length) S.ttsModels = tts; saveS(); }).catch(() => { });
   return true;
