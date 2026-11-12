@@ -324,7 +324,7 @@ a.btn{text-decoration:none}
   <div class="card">
     <h2>Mẫu Báo cáo nhanh mưa lũ</h2>
     <label class="f">Trích yếu</label><textarea id="sTrichYeuNhanh" style="min-height:60px"></textarea>
-    <label class="f">Đoạn công tác chỉ đạo (đứng trước danh sách tuyến)</label><textarea id="sChiDao" style="min-height:140px"></textarea>
+    <label class="f">Đoạn viết sẵn trước danh sách tuyến (để trống nếu không dùng)</label><textarea id="sChiDao" style="min-height:140px"></textarea>
     <label class="f">Câu kết</label><textarea id="sKetLuanNhanh" style="min-height:60px"></textarea>
     <label class="f">Danh sách tuyến — dòng bắt đầu bằng # là tên nhóm, mỗi dòng sau là 1 tuyến</label><textarea id="sRoutes" style="min-height:260px;font-size:14px"></textarea>
     <div class="hint">Sửa danh sách xong bấm Lưu. Áp dụng cho báo cáo nhanh tạo mới (không kế thừa).</div>
@@ -36732,7 +36732,7 @@ while (n === a[++i] && n === a[++i] && n === a[++i] && n === a[++i] && n === a[+
       });
     } else {
       (report.can_cu || []).forEach(t => t.trim() && body.push(bodyPara(t.trim())));
-      if (report.chi_dao) body.push(bodyPara(report.chi_dao.trim()));
+      if ((report.chi_dao || '').trim()) body.push(bodyPara(report.chi_dao.trim()));
       (report.nhom || []).forEach((g, gi) => {
         body.push(para([run(`${gi + 1}. `, { bold: true }), run(`${g.ten}:`, { bold: true, underline: true })], { indent: { firstLine: 567 }, keepNext: true, before: 60 }));
         (g.tuyen || []).forEach((t, ti) => {
@@ -36894,13 +36894,14 @@ const DEF = {
   recipients: 'Sở Xây dựng tỉnh Gia Lai', cc: 'Sở Xây dựng (báo cáo);\nLãnh đạo Ban;\nCác Đơn vị quản lý tuyến;\nLưu: VT, KTQLBT.',
   signerName: '', signerTitle: 'KT.GIÁM ĐỐC\nPHÓ GIÁM ĐỐC', context: '',
   trichYeuNhanh: 'Tình hình mưa lũ gây ngập lụt, hư hỏng các công trình giao thông trên địa bàn tỉnh',
-  chiDao: DEF_CHIDAO, ketLuanNhanh: 'Trên đây là báo cáo của Ban QLBT đường bộ, kính đề nghị Sở Xây dựng xem xét, chỉ đạo thực hiện./.',
+  chiDao: '', ketLuanNhanh: 'Trên đây là báo cáo của Ban QLBT đường bộ, kính đề nghị Sở Xây dựng xem xét, chỉ đạo thực hiện./.',
   routes: DEF_ROUTES, lastLoai: 'nhanh',
   voice: 'Charon', pace: 'brisk', rate: '1.15', stamp: true, model: 'auto', ttsModel: 'auto', models: null, ttsModels: null
 };
 let S = Object.assign({}, DEF);
 try { Object.assign(S, JSON.parse(localStorage.getItem(SKEY) || '{}')); } catch (e) { }
 try { if (!JSON.parse(localStorage.getItem(SKEY) || '{}').pace) { S.voice = 'Charon'; S.pace = 'brisk'; if (S.rate === '1') S.rate = '1.15'; } } catch (e) { }
+if (S.chiDao === DEF_CHIDAO) S.chiDao = '';
 const saveS = () => { try { localStorage.setItem(SKEY, JSON.stringify(S)); } catch (e) { } };
 
 /* ---------------- Lưu trữ (IndexedDB) ---------------- */
@@ -36937,6 +36938,7 @@ async function loadCurrent() {
   if (!C) { C = newCaseObj(); await saveCase(); }
   if (!C.loai) C.loai = (C.report && C.report.loai) || 'kiemtra';
   if (!C.videos) C.videos = [];
+  if (C.report && C.report.chi_dao === DEF_CHIDAO) C.report.chi_dao = '';
 }
 
 /* ---------------- Giao diện chung ---------------- */
@@ -37426,7 +37428,7 @@ QUY TẮC
 1. ${RULE_VAN}
 2. ${RULE_HUHONG}
 2b. Bố cục (chỉ giữ mục có thông tin, đánh số La Mã): I. THỜI GIAN, ĐỊA ĐIỂM, THÀNH PHẦN KIỂM TRA; II. HIỆN TRẠNG, DIỄN BIẾN; III. NGUYÊN NHÂN SƠ BỘ (chỉ khi người nói nêu); IV. THIỆT HẠI, ẢNH HƯỞNG VÀ NGUY CƠ; V. CÔNG TÁC XỬ LÝ, BẢO ĐẢM GIAO THÔNG ĐÃ TRIỂN KHAI; VI. ĐỀ XUẤT, KIẾN NGHỊ. Mỗi phần tử "doan" là một đoạn. Tiểu mục là phần tử riêng dạng "1. Tên tiểu mục" (không chấm cuối). Liệt kê dùng đoạn bắt đầu "- ".
-3. "mo_dau": căn cứ/lý do + thời gian kiểm tra, kết thúc "Kết quả cụ thể như sau:".
+3. "mo_dau": ngắn gọn, chỉ nêu sự việc thực tế (thời gian, địa điểm kiểm tra, thành phần nếu có) và căn cứ nếu người nói nhắc tới; KHÔNG viết câu chung chung về công tác chỉ đạo, trực ban. Kết thúc "Kết quả cụ thể như sau:".
 4. ${RULE_CANCU}
 5. "ket_luan": "Trên đây là báo cáo …, kính đề nghị … xem xét, chỉ đạo./.".
 6. "trich_yeu": ≤ 25 từ, không chấm cuối, VD "Kết quả kiểm tra hiện trường sạt lở taluy dương tại Km12+300, Quốc lộ 19C".
@@ -37445,7 +37447,7 @@ QUY TẮC
 3a. ${RULE_HUHONG}
 3. "tinh_hinh" viết theo văn phong mẫu (thường bắt đầu bằng "Hiện tại", hoặc "Đoạn Km…/Tại Km…" khi mô tả vị trí hư hỏng; đã xử lý xong thì kết thúc "Hiện tại trên toàn tuyến, giao thông đi lại bình thường."), VD: "Đoạn Km17+850 (P) đất đá sạt lở xuống đường gây ảnh hưởng đến phần xe chạy. Ban QLBT đường bộ đã chỉ đạo đơn vị quản lý BDTX đảm bảo giao thông tại hiện trường và di dời xong đá ra khỏi mặt đường. Hiện tại trên toàn tuyến, giao thông đi lại bình thường." hoặc "Hiện tại vị trí từ Km19+600 – Km19+700 (L=100m) nước tràn qua đường khoảng 7cm. Ban QLBT đường bộ đang phối hợp với chính quyền địa phương, đơn vị quản lý tuyến thực hiện cảnh báo người và phương tiện lưu thông trên tuyến được an toàn." Nhiều vị trí trên một tuyến thì gộp thành các ý "- Vị trí Km…: …". Khi tuyến đã hết sự cố: "Hiện tại trên toàn tuyến, giao thông đi lại bình thường." (hoặc nêu rõ vị trí đã thông xe). "su_co": true nếu tuyến đang có sự cố/ảnh hưởng, false nếu bình thường. Khi cập nhật một tuyến đang có sự cố, viết lại toàn bộ tình hình mới nhất của tuyến đó (không chỉ phần thêm).
 4. "can_cu": mảng các đoạn căn cứ + dự báo (đứng đầu báo cáo). Trả null nếu không đổi; trả mảng MỚI ĐẦY ĐỦ nếu có thay đổi. ${RULE_CANCU}
-5. "chi_dao", "trich_yeu", "ket_luan", "cap_nhat" (giờ số liệu, dạng "10 giờ 00 phút ngày 11/11/2026"): null nếu không đổi.
+5. CHỈ VIẾT NỘI DUNG HIỆN TRƯỜNG THỰC TẾ: không tự viết đoạn công tác chỉ đạo, trực ban chung chung; "chi_dao" luôn để null trừ khi người nói yêu cầu rõ. "can_cu" chỉ khi người nói nhắc tới văn bản/dự báo. "trich_yeu", "ket_luan", "cap_nhat" (giờ số liệu, dạng "10 giờ 00 phút ngày 11/11/2026"): null nếu không đổi.
 6. "chu_thich_anh": chú thích cho các ẢNH MỚI theo thứ tự gửi, nêu tuyến và vị trí, VD "QL19C, Km19+600 – nước tràn qua đường"; mảng rỗng nếu không có ảnh mới.
 7. ${RULE_CLIP}
 8. "thieu_thong_tin": những chỗ còn "…" cần người báo cáo bổ sung. "ban_ghi": chép lại lời nói mới. "thay_doi": 1–2 câu tóm tắt đã thay đổi gì.
@@ -37573,7 +37575,6 @@ async function runNhanh({ clips = [], photos = [], notes = false, edit = null, v
   if (!edit && !(data.cap_nhat)) data.cap_nhat = DocBuild.viTime(now);
   const changed = applyNhanhPatch(rep, data);
   if (!edit && !changed.includes('cap_nhat') && !rep.cap_nhat) rep.cap_nhat = DocBuild.viTime(now);
-  if (!rep.can_cu.length && !rep.thieu_thong_tin.some(x => /căn cứ/i.test(x))) rep.thieu_thong_tin.unshift('Căn cứ chỉ đạo (chỉ cần nói ngắn tên văn bản, VD “theo công điện 73 của Thủ tướng”)');
   if (sources.length) rep.nguon = sources; else if (changed.some(c => c.startsWith('can_cu'))) rep.nguon = rep.nguon || [];
   // chú thích ảnh mới
   const caps = Array.isArray(data.chu_thich_anh) ? data.chu_thich_anh.map(x => String(x || '').replace(/^hình\s*\d+\s*[:.\-–]\s*/i, '')) : [];
@@ -37683,9 +37684,8 @@ function renderReport(changedPaths) {
     <h1>${nhanh ? 'BÁO CÁO NHANH' : 'BÁO CÁO'}</h1>${ed('trich_yeu', r.trich_yeu, 'ty', 'div')}`;
   if (nhanh) {
     h += `<div class="cn">(Số liệu cập nhật tính đến <span contenteditable="true" data-path="cap_nhat">${hl(r.cap_nhat || '…')}</span>)</div><div class="ln3"></div>`;
-    if (r.can_cu.length) r.can_cu.forEach((t, i) => { h += ed('can_cu.' + i, t); });
-    else h += `<p class="ph-hint">[Căn cứ chỉ đạo — bấm 🎙 Nói để sửa và nói ngắn, VD “theo công điện 73 của Thủ tướng”, AI sẽ tự tra đầy đủ]</p>`;
-    h += ed('chi_dao', r.chi_dao);
+    r.can_cu.forEach((t, i) => { h += ed('can_cu.' + i, t); });
+    if (r.chi_dao) h += ed('chi_dao', r.chi_dao);
     r.nhom.forEach((g, gi) => {
       h += `<p class="h"><b>${gi + 1}. <u>${esc(g.ten)}:</u></b></p>`;
       g.tuyen.forEach((t, ti) => {
@@ -38120,7 +38120,7 @@ function takeKeyFromLink() {
 }
 /* ---------------- Khởi động ---------------- */
 try { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); } catch (e) { }
-function renderAll() { if (!C.videos) C.videos = []; if (!C.loai) C.loai = (C.report && C.report.loai) || 'kiemtra'; $('#notes').value = C.notes || ''; renderClips(); renderPhotos(); renderReport(); renderHeader(); outFiles = []; $('#fileList').innerHTML = ''; $('#expMsg').innerHTML = ''; $('#chatList').innerHTML = ''; }
+function renderAll() { if (!C.videos) C.videos = []; if (C.report && C.report.chi_dao === DEF_CHIDAO) C.report.chi_dao = ''; if (!C.loai) C.loai = (C.report && C.report.loai) || 'kiemtra'; $('#notes').value = C.notes || ''; renderClips(); renderPhotos(); renderReport(); renderHeader(); outFiles = []; $('#fileList').innerHTML = ''; $('#expMsg').innerHTML = ''; $('#chatList').innerHTML = ''; }
 window.addEventListener('beforeunload', e => { if (fieldRec.on) { e.preventDefault(); e.returnValue = ''; } });
 (async () => {
   loadSettingsUI();
