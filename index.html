@@ -37301,45 +37301,66 @@ function apiErrMsg(status, j) {
   const m = (j && j.error && j.error.message) || '';
   if (status === 400 && /API key/i.test(m)) return 'Khóa API không hợp lệ. Kiểm tra lại trong ⚙ Cài đặt.';
   if (status === 403) return 'Khóa API không có quyền (403). Tạo khóa mới tại aistudio.google.com/apikey.';
-  if (status === 429) return 'Đã hết lượt miễn phí tạm thời (429). Đợi 1 phút rồi thử lại.';
+  if (status === 429) return 'Lượt AI miễn phí đang tạm hết. Đợi 1–2 phút rồi bấm lại (ghi âm vẫn được giữ).';
   return `Lỗi AI (${status}): ${m.slice(0, 200)}`;
 }
-function textModels() { const l = (S.models && S.models.length ? S.models : FALLBACK_TEXT); return S.model && S.model !== 'auto' ? [S.model, ...l.filter(x => x !== S.model)] : l; }
+function textModels() { const l0 = (S.models && S.models.length ? S.models : FALLBACK_TEXT); const l = [...l0.filter(m => /lite/.test(m)), ...l0.filter(m => !/lite/.test(m))]; return S.model && S.model !== 'auto' ? [S.model, ...l.filter(x => x !== S.model)] : l; }
 function ttsModels() { const l = (S.ttsModels && S.ttsModels.length ? S.ttsModels : FALLBACK_TTS); return S.ttsModel && S.ttsModel !== 'auto' ? [S.ttsModel, ...l.filter(x => x !== S.ttsModel)] : l; }
 
-async function gemini(models, body, signal, label) {
-  if (!S.key) throw new Error('Chưa có khóa AI. Vào ⚙ Cài đặt để dán khóa Gemini miễn phí.');
-  let lastErr;
-  for (const model of models.slice(0, 4)) {
-    for (let attempt = 0; attempt < 3; attempt++) {
+// Ghi nhớ mô hình đang hết lượt (bỏ qua 10 phút) và mô hình vừa chạy tốt (ưu tiên lần sau)
+const modelState = { cool: {}, good: null };
+try { Object.assign(modelState, JSON.parse(localStorage.getItem('htbc_models') || '{}')); } catch (e) { }
+const saveMS = () => { try { localStorage.setItem('htbc_models', JSON.stringify(modelState)); } catch (e) { } };
+function orderModels(list) {
+  const now = Date.now();
+  let l = list.filter(m => !(modelState.cool[m] > now));
+  if (!l.length) l = list.slice();
+  if (modelState.good && l.includes(modelState.good)) l = [modelState.good, ...l.filter(m => m !== modelState.good)];
+  return l;
+}
+async function gemini(models, body, signal, label, opts = {}) {
+  if (!S.key) throw new Error('Chưa kết nối AI. Bấm ⚙ để dán mã.');
+  let lastErr; const t0 = Date.now(); const maxTotal = opts.fast ? 25000 : 100000;
+  const list = orderModels(models).slice(0, opts.fast ? 2 : 4);
+  for (const model of list) {
+    for (let attempt = 0; attempt < (opts.fast ? 1 : 2); attempt++) {
       if (signal && signal.aborted) throw new Error('Đã hủy.');
+      if (Date.now() - t0 > maxTotal) throw lastErr || new Error('Máy chủ AI bận quá lâu. Đợi 1–2 phút rồi bấm lại.');
       let r, j;
       try {
         r = await fetch(`${API}/models/${model}:generateContent`, { method: 'POST', signal, headers: { 'Content-Type': 'application/json', 'x-goog-api-key': S.key }, body: JSON.stringify(body) });
         j = await r.json().catch(() => ({}));
       } catch (e) {
         if (signal && signal.aborted) throw new Error('Đã hủy.');
-        lastErr = new Error('Không kết nối được máy chủ AI. Kiểm tra sóng 3G/4G rồi thử lại (dữ liệu đã được lưu).');
-        await sleep(2500); continue;
+        lastErr = new Error('Không kết nối được máy chủ AI. Kiểm tra sóng 4G/Wi-Fi rồi bấm lại (ghi âm vẫn được giữ).');
+        await sleep(2000); continue;
       }
       if (r.ok) {
         const cand = (j.candidates || [])[0];
         if (!cand || !cand.content) { lastErr = new Error('AI không trả kết quả' + (j.promptFeedback ? ' (bị chặn nội dung)' : '') + '.'); break; }
+        if (!opts.fast) { modelState.good = model; saveMS(); }
         return { json: j, cand, model };
       }
+      const raw = JSON.stringify(j);
       lastErr = new Error(apiErrMsg(r.status, j));
-      if (r.status === 400 || r.status === 401 || r.status === 403) { if (/API key/i.test(JSON.stringify(j))) throw lastErr; break; }
-      if (r.status === 404) break; // mô hình không còn → thử mô hình khác
+      console.warn('Gemini', model, r.status, raw.slice(0, 400));
+      if (r.status === 400 || r.status === 401 || r.status === 403) { if (/API key|API_KEY/i.test(raw)) throw lastErr; break; }
+      if (r.status === 404) break;
       if (r.status === 429 || r.status >= 500) {
-        const det = (j.error && j.error.details) || [];
-        const ri = det.find(d => d.retryDelay); let wait = ri ? parseFloat(ri.retryDelay) : (attempt + 1) * 8;
-        if (/per ?day|PerDay|daily/i.test(JSON.stringify(j))) break; // hết lượt trong ngày → đổi mô hình
-        if (wait > 65) break;
-        busySub(`${label || ''} Máy chủ bận, tự thử lại sau ${Math.ceil(wait)} giây…`);
-        await sleep(wait * 1000 + 500); continue;
+        // Hết hạn mức (limit 0 / theo ngày) → bỏ qua mô hình này 10 phút, chuyển ngay mô hình khác
+        if (r.status === 429 && (/limit: ?0\b|PerDay|per ?day|daily|quota/i.test(raw))) { if (!opts.fast) { modelState.cool[model] = Date.now() + 600000; saveMS(); } if (!/PerMinute|per ?minute/i.test(raw) || /limit: ?0\b/.test(raw)) break; }
+        if (opts.fast) break;
+        const ri = ((j.error && j.error.details) || []).find(d => d.retryDelay);
+        const wait = Math.min(ri ? parseFloat(ri.retryDelay) : 6, 20);
+        if (attempt === 0 && Date.now() - t0 + wait * 1000 < maxTotal) {
+          busySub(`${label || ''} Máy chủ bận, thử lại sau ${Math.ceil(wait)} giây…`);
+          await sleep(wait * 1000 + 300); continue;
+        }
+        break;
       }
       break;
     }
+    busySub(`${label || ''} Đang thử mô hình AI dự phòng…`);
   }
   throw lastErr || new Error('Lỗi AI không xác định.');
 }
@@ -37400,10 +37421,10 @@ function ctxText() {
 async function genJSON(sys, parts, temp, signal) {
   const base = { systemInstruction: { parts: [{ text: sys }] }, contents: [{ role: 'user', parts }] };
   try {
-    const r = await gemini(textModels(), Object.assign({}, base, { tools: [{ google_search: {} }], generationConfig: { temperature: temp } }), signal);
+    const r = await gemini(textModels(), Object.assign({}, base, { tools: [{ google_search: {} }], generationConfig: { temperature: temp } }), signal, '', { fast: true });
     return { data: parseJSON(candText(r.cand)), sources: srcOf(r.cand) };
   } catch (e) {
-    if (/hủy|khóa|API key|kết nối|429|hết lượt/i.test(e.message)) throw e;
+    if (/hủy|mã không|API key|Chưa kết nối/i.test(e.message)) throw e;
     busySub('Thử lại (không tra cứu)…');
     const r = await gemini(textModels(), Object.assign({}, base, { generationConfig: { responseMimeType: 'application/json', temperature: temp } }), signal);
     return { data: parseJSON(candText(r.cand)), sources: [] };
