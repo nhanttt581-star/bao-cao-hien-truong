@@ -37157,7 +37157,7 @@ async function renderPhotos() {
   $('#photoHint').textContent = C.photos.length ? 'Bấm ✓ để bỏ/chọn ảnh đưa vào báo cáo. Ảnh có 🎬 là AI cắt từ clip.' : '';
   const vl = $('#videoList');
   vl.innerHTML = (C.videos || []).map((v, i) => `<div class="item"><div class="ficon" style="background:#7c3aed">🎬</div>
-    <div class="grow"><b>Clip ${i + 1} · ${fmtDur(v.dur)}</b><small>${fmtTime(v.time)} · ${v.frames.length} khung hình${v.audioId ? ' · có tiếng' : ' · không tách được tiếng'}</small></div>
+    <div class="grow"><b>Clip ${i + 1} · ${fmtDur(v.dur)}</b><small>${fmtTime(v.time)} · ${v.direct ? 'AI xem trực tiếp' : v.audioId ? 'có tiếng' : 'không tách được tiếng'}${v.frames.length ? ' · ' + v.frames.length + ' khung hình' : ''}</small></div>
     <span class="tag ${v.used ? '' : 'new'}">${v.used ? 'đã dùng' : 'mới'}</span><button class="ib" data-vdel="${v.id}">🗑</button></div>`).join('');
   vl.querySelectorAll('[data-vdel]').forEach(b => b.onclick = async () => {
     if (!await confirmBox('Xóa clip?', 'Clip gốc sẽ bị xóa khỏi ứng dụng (ảnh đã cắt từ clip vẫn giữ).', 'Xóa')) return;
@@ -37175,31 +37175,58 @@ async function frameBlob(v, max) {
   const cv = document.createElement('canvas'); cv.width = w; cv.height = h; cv.getContext('2d').drawImage(v, 0, 0, w, h);
   return { blob: await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.8)), w, h };
 }
+const DIRECT_MAX = 11e6; // clip nhỏ hơn mức này gửi thẳng cho AI xem
+async function openVideo(url) {
+  const v = document.createElement('video');
+  v.muted = true; v.defaultMuted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.setAttribute('muted', ''); v.preload = 'auto';
+  v.style.cssText = 'position:fixed;left:-9999px;top:0;width:4px;height:4px;opacity:0;pointer-events:none';
+  document.body.appendChild(v); v.src = url;
+  await new Promise((res, rej) => {
+    let fin = false; const ok = () => { if (!fin) { fin = true; res(); } };
+    v.addEventListener('loadeddata', ok, { once: true }); v.addEventListener('canplay', ok, { once: true });
+    v.onerror = () => { if (!fin) { fin = true; rej(new Error('Máy không đọc được clip này.')); } };
+    setTimeout(() => { if (!fin) { fin = true; rej(new Error('Đọc clip quá lâu.')); } }, 15000);
+    try { v.load(); } catch (e) { }
+    const p = v.play(); if (p && p.then) p.then(() => v.pause()).catch(() => { }); // iPhone chỉ tải video khi đã phát
+  });
+  for (let k = 0; k < 30 && !v.videoWidth; k++) await sleep(100);
+  try { v.pause(); } catch (e) { }
+  return v;
+}
 async function addVideos(files) {
   for (const file of files) {
     busy('Đang xử lý clip…', 'Đọc video', false);
-    const url = URL.createObjectURL(file);
+    const url = URL.createObjectURL(file); let v = null;
     try {
       const pos = await getPos(4000);
-      const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = url;
-      await new Promise((res, rej) => { v.onloadeddata = res; v.onerror = () => rej(new Error('Máy không đọc được clip này.')); setTimeout(() => rej(new Error('Đọc clip quá lâu.')), 25000); });
-      let dur = v.duration;
-      if (!isFinite(dur) || !dur) { await seekTo(v, 1e7); dur = v.currentTime || 1; }
-      const n = Math.min(20, Math.max(4, Math.ceil(dur / 6)));
-      const frames = [];
-      for (let k = 0; k < n; k++) {
-        const t = Math.max(0, Math.min(dur - 0.2, (k + 0.5) * dur / n)); busySub(`Lấy khung hình ${k + 1}/${n}`);
-        await seekTo(v, t); const f = await frameBlob(v, 1600);
-        const fid = uid(); await putBlob(fid, f.blob); frames.push({ id: fid, t: Math.round(t * 10) / 10, w: f.w, h: f.h });
-      }
-      busySub('Tách tiếng nói (có thể mất ít phút với clip dài)…');
+      const direct = file.size <= DIRECT_MAX;
+      let dur = 0; const frames = [];
+      try {
+        v = await openVideo(url);
+        dur = v.duration;
+        if (!isFinite(dur) || !dur) { await seekTo(v, 1e7); dur = v.currentTime || 1; }
+        if (v.videoWidth) {
+          const n = Math.min(20, Math.max(4, Math.ceil(dur / 6)));
+          for (let k = 0; k < n; k++) {
+            const t = Math.max(0, Math.min(dur - 0.2, (k + 0.5) * dur / n)); busySub(`Lấy khung hình ${k + 1}/${n}`);
+            await seekTo(v, t); const f = await frameBlob(v, 1600);
+            if (!f.blob) continue;
+            const fid = uid(); await putBlob(fid, f.blob); frames.push({ id: fid, t: Math.round(t * 10) / 10, w: f.w, h: f.h });
+          }
+        }
+      } catch (e) { console.warn('frames', e); if (!direct) throw e; }
       let audioId = null, audioMime = null;
-      if (file.size < 400e6) { try { const a = await audioForAI(file); if (a.blob !== file) { audioId = uid(); audioMime = a.mime; await putBlob(audioId, a.blob); } } catch (e) { } }
+      if (!direct && file.size < 400e6) {
+        busySub('Tách tiếng nói (có thể mất ít phút với clip dài)…');
+        try { const a = await audioForAI(file); if (a.blob !== file) { audioId = uid(); audioMime = a.mime; await putBlob(audioId, a.blob); } } catch (e) { }
+      }
       const id = uid(); await putBlob(id, file);
       const end = file.lastModified && Math.abs(Date.now() - file.lastModified) < 864e5 * 3650 ? file.lastModified : Date.now();
-      C.videos.push({ id, name: file.name || 'clip.mp4', type: file.type || 'video/mp4', dur, time: end - dur * 1000, gps: pos, frames, audioId, audioMime, used: false });
-      await saveCase(); toast(`Đã xử lý clip (${fmtDur(dur)}, ${n} khung hình${audioId ? ', có tiếng' : ''}).`);
-    } catch (e) { toast('Lỗi xử lý clip: ' + e.message, 6000); }
+      dur = dur || 1;
+      C.videos.push({ id, name: file.name || 'clip.mp4', type: file.type || 'video/mp4', size: file.size, direct, dur, time: end - dur * 1000, gps: pos, frames, audioId, audioMime, used: false });
+      await saveCase(); toast(`Đã nhận clip (${fmtDur(dur)}). Bấm ✨ Làm báo cáo.`);
+    } catch (e) { toast('Lỗi xử lý clip: ' + e.message + ' Clip dài quá thì quay ngắn lại (dưới 1 phút).', 7000); }
+    try { v && v.remove(); } catch (e) { }
     URL.revokeObjectURL(url); done();
   }
   renderPhotos();
@@ -37210,6 +37237,7 @@ async function framesToPhotos(picks, videos) {
   (Array.isArray(picks) ? picks : []).forEach(p => { const n = +p.clip, k = +p.khung; if (!n || !k) return; if (!byClip.has(n)) byClip.set(n, []); if (byClip.get(n).length < 3) byClip.get(n).push({ k, cap: String(p.chu_thich || '') }); });
   for (const v of videos) {
     const no = C.videos.indexOf(v) + 1;
+    if (!v.frames.length) continue;
     let sel = byClip.get(no);
     if (!sel || !sel.length) sel = [{ k: Math.ceil(v.frames.length / 2), cap: '' }];
     for (const { k, cap } of sel) {
@@ -37444,7 +37472,8 @@ async function collectParts(clips, photos, withNotes, videos = []) {
   const parts = [];
   for (const v of videos) {
     const no = C.videos.indexOf(v) + 1; busySub(`Chuẩn bị clip ${no}`);
-    parts.push({ text: `Clip ${no}: quay lúc ${fmtTime(v.time)}, dài ${fmtDur(v.dur)}${v.gps ? ', GPS ' + posTxt(v.gps) : ''}. Gồm ${v.audioId ? 'tiếng nói và ' : ''}${v.frames.length} khung hình K1–K${v.frames.length}.` });
+    parts.push({ text: `Clip ${no}: quay lúc ${fmtTime(v.time)}, dài ${fmtDur(v.dur)}${v.gps ? ', GPS ' + posTxt(v.gps) : ''}.${v.direct ? ' Đây là video gốc (có hình và tiếng), hãy xem và nghe trực tiếp.' : ' Gồm ' + (v.audioId ? 'tiếng nói và ' : '')}${v.frames.length ? ` Kèm ${v.frames.length} khung hình K1–K${v.frames.length} để chọn ảnh minh họa.` : ' (Không có khung hình để chọn ảnh, để "chon_khung" rỗng.)'}` });
+    if (v.direct) { const vb = await getBlob(v.id); if (vb) { busySub(`Gửi clip ${no}…`); const mt = /quicktime|mov/i.test(v.type) ? 'video/mov' : (v.type || 'video/mp4').split(';')[0]; parts.push({ inlineData: { mimeType: mt, data: await b64(vb) } }); } }
     if (v.audioId) { const ab = await getBlob(v.audioId); if (ab) parts.push({ inlineData: { mimeType: v.audioMime, data: await b64(ab) } }); }
     for (let k = 0; k < v.frames.length; k++) {
       const fb = await getBlob(v.frames[k].id); if (!fb) continue;
