@@ -79,7 +79,7 @@ nav.bar button{flex:1;border:0;background:none;padding:6px 2px;border-radius:12p
 nav.bar button i{font-style:normal;font-size:21px;line-height:1}
 nav.bar button.on{color:var(--navy);background:#e8eef5}
 /* Văn bản xem trước */
-.toolbar{position:sticky;top:calc(66px + var(--safe-t));z-index:10;background:var(--bg);padding:6px 0 8px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.toolbar{position:sticky;top:calc(112px + var(--safe-t));z-index:10;background:var(--bg);padding:6px 0 8px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .toolbar .btn{min-height:52px}
 .doc{background:#fff;border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,.08);padding:22px 18px 26px;font-family:"Times New Roman",Times,serif;font-size:16.5px;line-height:1.5;color:#000}
 .doc .hdr{display:grid;grid-template-columns:42% 58%;text-align:center;font-size:13px;line-height:1.35;gap:6px}
@@ -141,9 +141,49 @@ audio{width:100%;margin-top:8px}
 .steps{margin:6px 0 0;padding-left:20px;font-size:14.5px}
 .steps li{margin-bottom:4px}
 a{color:var(--blue)}
+
+header.top button{min-width:44px;font-size:16px}
+.steps-bar{position:sticky;top:calc(56px + var(--safe-t));z-index:19;display:flex;gap:6px;padding:8px 12px;background:var(--bg);max-width:760px;margin:0 auto}
+.steps-bar button{flex:1;border:0;border-radius:12px;padding:10px 4px;background:#e3e9f0;color:var(--muted);font-weight:700;font-size:15px}
+.steps-bar button b{display:inline-flex;width:22px;height:22px;border-radius:50%;background:#fff;align-items:center;justify-content:center;margin-right:4px;font-size:13px}
+.steps-bar button.on{background:var(--navy);color:#fff}
+.steps-bar button.on b{color:var(--navy)}
+.steps-bar.hide{display:none}
+main{padding-bottom:calc(30px + var(--safe-b))}
+.ctabar{position:sticky;bottom:0;padding:10px 0 calc(10px + var(--safe-b));background:linear-gradient(to top,var(--bg) 75%,rgba(238,242,246,0));z-index:9}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.lnk{color:var(--blue);font-weight:600;font-size:15px;cursor:pointer}
+.tplchip{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;font-weight:700;color:var(--navy2)}
+.tplchip .seg{display:inline-grid;width:auto;grid-template-columns:auto auto;padding:3px}
+.tplchip .seg button{padding:6px 12px;font-size:13.5px}
+details.notes{margin-top:12px}
+details.notes summary{cursor:pointer;font-weight:600;color:var(--navy2);padding:6px 0}
+.welcome{text-align:center;padding:24px 18px}
+.welcome h1{margin:6px 0 4px;font-size:24px;color:var(--navy)}
+.welcome p{color:var(--muted);margin:0 0 16px}
+.wico{font-size:44px}
+.wbox{background:#fff6e0;border:1px solid #f1d38a;border-radius:14px;padding:12px;margin-bottom:14px}
+.wbox b{display:block;font-size:17px;color:#5c4100}
+a.btn{text-decoration:none}
+.toolbar .btn{min-height:58px;font-size:17px}
+.doc .more{text-indent:0;text-align:center;color:var(--blue);font-family:system-ui;font-size:14px;font-weight:600;cursor:pointer;background:#f0f6ff;border-radius:8px;padding:6px}
+.sheet.chat{display:flex;flex-direction:column;max-height:88vh}
+.chatlist{flex:1;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:6px 2px 10px;min-height:120px}
+.bub{max-width:88%;padding:9px 12px;border-radius:14px;font-size:15px;white-space:pre-wrap}
+.bub.me{align-self:flex-end;background:#dbeafe;color:#0c3a75;border-bottom-right-radius:4px}
+.bub.ai{align-self:flex-start;background:#eef2f6;color:var(--ink);border-bottom-left-radius:4px}
+.bub.ai q{display:block;margin-top:6px;padding:6px 8px;border-left:3px solid var(--green);background:#e4f5e9;font-family:"Times New Roman",serif;font-size:14.5px;quotes:none}
+.bub.ai.wait{color:var(--muted);font-style:italic}
+.chat-empty{color:var(--muted);font-size:14px;text-align:center;padding:10px}
+.recbtn.sm{width:96px;height:96px;font-size:13px}
+.recbtn.sm svg{width:32px;height:32px}
+#chatActions .btn{min-height:52px}
 @media print{
   body *{visibility:hidden}
   #printArea,#printArea *{visibility:visible}
+  .doc .more{display:none}
+  .doc.onlyinc p.rt:not(.inc){display:block}
   #printArea{position:absolute;left:0;top:0;width:100%}
   .doc.onlyinc p.rt:not(.inc){display:block}
   .doc{box-shadow:none;padding:0;font-size:14pt}
@@ -156,115 +196,114 @@ a{color:var(--blue)}
 <body>
 <header class="top">
   <div class="t"><b id="caseTitle">Báo cáo hiện trường</b><small id="caseSub">—</small></div>
-  <button id="btnCases" aria-label="Hồ sơ">📁 Hồ sơ</button>
+  <button id="btnCases" aria-label="Hồ sơ đã lưu">📁</button>
   <button id="btnNew" aria-label="Báo cáo mới">＋ Mới</button>
+  <button id="btnSettings" aria-label="Cài đặt">⚙</button>
 </header>
+<nav class="steps-bar" id="stepsBar">
+  <button data-tab="field" class="on"><b>1</b> Ghi</button>
+  <button data-tab="report"><b>2</b> Xem &amp; sửa</button>
+  <button data-tab="export"><b>3</b> Gửi</button>
+</nav>
 
 <main>
-<!-- ============ TAB 1: HIỆN TRƯỜNG ============ -->
-<section class="tab on" id="tab-field">
-  <div id="setupWarn" class="warn" style="display:none;margin-bottom:12px">Chưa có khóa AI. Vào <b>⚙ Cài đặt</b> để dán khóa Gemini miễn phí (làm 1 lần, mất 2 phút).</div>
-  <div class="card">
-    <h2>Mẫu báo cáo</h2>
-    <div class="seg" id="tplSeg"><button data-t="nhanh">⚡ Báo cáo nhanh mưa lũ</button><button data-t="kiemtra">🔍 Kiểm tra 1 vị trí</button></div>
-    <div class="hint" id="tplHint"></div>
+<!-- ============ MÀN HÌNH CHÀO ============ -->
+<section class="tab" id="tab-welcome">
+  <div class="card welcome">
+    <div class="wico">🎙</div>
+    <h1>Báo cáo hiện trường</h1>
+    <p>Nói – chụp – quay tại hiện trường, AI viết thành báo cáo hành chính, rồi gửi Zalo cho lãnh đạo.</p>
+    <div class="wbox">
+      <b>Kết nối AI – chỉ làm 1 lần</b>
+      <div class="muted">Miễn phí, dùng Gmail của anh/chị, khoảng 2 phút.</div>
+    </div>
+    <a class="btn pri big blk" id="wGet" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">① Lấy mã miễn phí từ Google</a>
+    <div class="hint" style="text-align:left;margin:6px 4px 14px">Trang Google mở ra: đăng nhập Gmail → bấm <b>Create API key</b> → bấm <b>Copy</b> → quay lại đây.</div>
+    <label class="f" style="text-align:left">② Dán mã vào đây</label>
+    <div class="row"><input type="text" id="wKey" placeholder="Mã bắt đầu bằng AIza…" autocomplete="off" style="flex:1"><button class="btn" id="wPaste">📋 Dán</button></div>
+    <button class="btn grn big blk" id="wDone" style="margin-top:12px">③ Xong – bắt đầu dùng</button>
+    <div id="wMsg" style="margin-top:10px"></div>
+    <button class="btn blk" id="wSkip" style="background:none;margin-top:4px;font-weight:600;color:var(--muted)">Xem thử trước, kết nối sau</button>
   </div>
+</section>
+
+<!-- ============ BƯỚC 1: GHI ============ -->
+<section class="tab" id="tab-field">
+  <div id="setupWarn" class="warn" style="display:none;margin-bottom:10px">Chưa kết nối AI. <button class="btn sm" id="btnGoWelcome">Kết nối ngay</button></div>
+  <div class="tplchip"><span id="tplName">⚡ Báo cáo nhanh mưa lũ</span><span class="seg" id="tplSeg"><button data-t="nhanh">Nhanh</button><button data-t="kiemtra">Kiểm tra</button></span></div>
   <div class="card">
-    <h2>1 · Ghi âm hiện trường</h2>
     <div class="recwrap">
-      <button class="recbtn" id="recBtn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v7a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V22h2v-3.08A7 7 0 0 0 19 12h-2z"/></svg><span id="recLbl">BẤM ĐỂ GHI</span></button>
+      <button class="recbtn" id="recBtn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v7a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V22h2v-3.08A7 7 0 0 0 19 12h-2z"/></svg><span id="recLbl">BẤM ĐỂ NÓI</span></button>
       <div class="timer" id="recTimer">00:00</div>
       <div class="meter"><i id="recMeter"></i></div>
-      <div class="muted" style="text-align:center">Có thể ghi nhiều đoạn, mỗi đoạn một vị trí.</div>
+      <div class="muted" id="tplHint" style="text-align:center"></div>
     </div>
+    <div class="row2">
+      <label class="btn pri big">📷 Chụp ảnh<input id="camIn" type="file" accept="image/*" capture="environment" hidden></label>
+      <label class="btn pri big" style="background:#7c3aed">🎬 Quay clip<input id="vidIn" type="file" accept="video/*" capture="environment" hidden></label>
+    </div>
+    <div style="text-align:center;margin-top:8px"><label class="lnk">🖼 Lấy ảnh/clip có sẵn trong máy<input id="galIn" type="file" accept="image/*,video/*" multiple hidden></label></div>
     <div class="list" id="clipList"></div>
-  </div>
-
-  <div class="card">
-    <h2>2 · Ảnh & clip hiện trường</h2>
-    <div class="row3">
-      <label class="btn pri">📷 Chụp ảnh<input id="camIn" type="file" accept="image/*" capture="environment" hidden></label>
-      <label class="btn pri" style="background:#7c3aed">🎬 Quay clip<input id="vidIn" type="file" accept="video/*" capture="environment" hidden></label>
-      <label class="btn">🖼 Thư viện<input id="galIn" type="file" accept="image/*,video/*" multiple hidden></label>
-    </div>
-    <div class="hint">Quay clip và nói luôn khi quay: AI vừa nghe vừa xem, tự cắt 1–3 ảnh rõ nhất mỗi clip đưa vào báo cáo. Nên quay mỗi clip 1 vị trí, dưới 5 phút.</div>
     <div class="list" id="videoList"></div>
     <div class="grid" id="photoGrid"></div>
     <div class="hint" id="photoHint"></div>
+    <details class="notes"><summary>✏️ Gõ thêm ghi chú (không bắt buộc)</summary><textarea id="notes" placeholder="VD: Km19+600 QL19C; đoàn kiểm tra gồm…"></textarea></details>
   </div>
-
-  <div class="card">
-    <h2>3 · Ghi chú gõ thêm (không bắt buộc)</h2>
-    <textarea id="notes" placeholder="VD: Km12+300 ĐT.725; đoàn kiểm tra gồm anh B (TVGS), anh C (nhà thầu)…"></textarea>
-  </div>
-
-  <button class="btn acc big blk" id="btnGen">✨ Soạn báo cáo</button>
-  <div class="hint" id="genHint" style="text-align:center;margin-top:6px"></div>
+  <div class="ctabar"><button class="btn acc big blk" id="btnGen">✨ Làm báo cáo</button><div class="hint" id="genHint" style="text-align:center;margin-top:4px"></div></div>
 </section>
 
-<!-- ============ TAB 2: BÁO CÁO ============ -->
+<!-- ============ BƯỚC 2: XEM & SỬA ============ -->
 <section class="tab" id="tab-report">
-  <div id="repEmpty" class="card"><h2>Chưa có báo cáo</h2><div class="muted">Ghi âm ở tab <b>Hiện trường</b> rồi bấm <b>✨ Soạn báo cáo</b>.</div></div>
+  <div id="repEmpty" class="card"><h2>Chưa có báo cáo</h2><div class="muted">Quay lại bước <b>1 Ghi</b>, nói hoặc chụp rồi bấm <b>✨ Làm báo cáo</b>.</div></div>
   <div id="repWrap" style="display:none">
     <div class="toolbar">
-      <button class="btn pri" id="btnRead">🔊 Đọc cho tôi nghe</button>
-      <button class="btn acc" id="btnVoiceEdit">🎙 Nói để sửa</button>
-    </div>
-    <div class="row" style="margin-bottom:10px">
-      <button class="btn sm" id="btnUndo">↶ Hoàn tác</button>
-      <button class="btn sm" id="btnAiListen">🎧 Nghe giọng AI (bản MP3)</button>
-      <label class="muted" id="onlyIncWrap" style="font-size:14px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="onlyInc"> Chỉ xem tuyến có sự cố</label>
-      <span class="muted" style="font-size:13px">Chạm vào chữ để sửa tay.</span>
+      <button class="btn pri big" id="btnRead">🔊 Nghe</button>
+      <button class="btn acc big" id="btnVoiceEdit">🎙 Nói để sửa</button>
     </div>
     <div id="missing"></div>
-    <div id="printArea"><div class="doc" id="doc"></div></div>
-    <div class="card" style="margin-top:12px">
-      <details class="tr"><summary>Lời nói gốc (AI chép lại)</summary><div id="transcript"></div></details>
+    <div class="row" style="margin:0 0 8px;justify-content:space-between">
+      <label class="muted" id="onlyIncWrap" style="font-size:14px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="onlyInc" checked> Chỉ hiện tuyến có sự cố</label>
+      <button class="btn sm" id="btnUndo">↶ Hoàn tác</button>
     </div>
-    <button class="btn grn big blk" id="btnGoExport" style="margin-top:4px">✅ Chốt nội dung → Xuất file</button>
+    <div id="printArea"><div class="doc" id="doc"></div></div>
+    <div class="hint" style="text-align:center;margin:6px 0">Sửa chữ nhỏ: chạm thẳng vào chữ trong báo cáo để gõ.</div>
+    <details class="tr card"><summary>Lời nói gốc (AI chép lại)</summary><div id="transcript"></div></details>
   </div>
+  <div class="ctabar" id="repCta" style="display:none"><button class="btn grn big blk" id="btnGoExport">✅ Đúng rồi – sang bước Gửi</button></div>
 </section>
 
-<!-- ============ TAB 3: XUẤT & GỬI ============ -->
+<!-- ============ BƯỚC 3: GỬI ============ -->
 <section class="tab" id="tab-export">
   <div class="card">
-    <h2>Xuất báo cáo</h2>
-    <div class="muted">Tạo 2 file: <b>Word (.docx)</b> có đủ thể thức và phụ lục ảnh, và <b>MP3</b> giọng đọc toàn văn báo cáo.</div>
-    <button class="btn grn big blk" id="btnExport" style="margin-top:12px">📦 Tạo file Word + MP3</button>
-    <div id="expMsg" style="margin-top:10px"></div>
-  </div>
-  <div class="card files" id="fileCard" style="display:none">
-    <h2>File đã sẵn sàng</h2>
+    <h2>Gửi báo cáo</h2>
+    <div id="expMsg"></div>
     <div class="list" id="fileList"></div>
     <audio id="mp3Player" controls style="display:none"></audio>
     <label class="f" id="withClipWrap" style="display:none"><input type="checkbox" id="withClip"> Gửi kèm clip quay hiện trường (file lớn)</label>
-    <button class="btn pri big blk" id="btnShare" style="margin-top:12px">📤 Gửi qua Zalo / Gmail…</button>
-    <div class="hint">Bấm Gửi → chọn Zalo (hoặc Gmail) → chọn người nhận. Nếu điện thoại không cho gửi file Word trực tiếp, bấm <b>Tải về</b> rồi đính kèm từ thư mục Tải xuống.</div>
+    <button class="btn sm" id="btnExport" style="display:none">↻ Tạo lại file</button>
   </div>
-  <div class="card">
-    <h2>Khác</h2>
-    <div class="row">
-      <button class="btn" id="btnCopy" style="flex:1">📋 Sao chép nội dung</button>
-      <button class="btn" id="btnPrint" style="flex:1">🖨 In / Lưu PDF</button>
-    </div>
-    <div class="hint">“Sao chép” để dán thẳng vào tin nhắn Zalo khi cần báo nhanh.</div>
+  <div class="row" style="margin:0 0 12px">
+    <button class="btn" id="btnCopy" style="flex:1">📋 Sao chép chữ</button>
+    <button class="btn" id="btnPrint" style="flex:1">🖨 In / PDF</button>
   </div>
+  <div class="hint" style="text-align:center">Sau khi gửi xong, bấm <b>＋ Mới</b> ở trên để làm báo cáo tiếp theo.</div>
+  <div class="ctabar" id="fileCard"><button class="btn pri big blk" id="btnShare">📤 Gửi Zalo / Gmail</button></div>
 </section>
 
-<!-- ============ TAB 4: CÀI ĐẶT ============ -->
 <section class="tab" id="tab-settings">
   <div class="card">
-    <h2>Khóa AI miễn phí (Google Gemini)</h2>
+    <div class="row" style="margin-bottom:10px"><button class="btn sm" id="btnSetBack">← Quay lại</button></div>
+    <h2>Kết nối AI (mã miễn phí của Google)</h2>
     <ol class="steps">
       <li>Mở <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>, đăng nhập Gmail.</li>
       <li>Bấm <b>Create API key</b> → sao chép.</li>
       <li>Dán vào ô dưới → <b>Kiểm tra</b>.</li>
     </ol>
-    <label class="f">Khóa API</label>
+    <label class="f">Mã AI</label>
     <input type="password" id="sKey" placeholder="AIza…" autocomplete="off">
-    <div class="row" style="margin-top:8px"><button class="btn pri" id="btnTest" style="flex:1">Kiểm tra khóa</button><button class="btn" id="btnShowKey">👁</button></div>
+    <div class="row" style="margin-top:8px"><button class="btn pri" id="btnTest" style="flex:1">Kiểm tra mã</button><button class="btn" id="btnShowKey">👁</button></div>
     <div id="keyMsg" style="margin-top:8px"></div>
-    <div class="hint">Khóa chỉ lưu trên điện thoại này. Lưu ý: với gói miễn phí, Google có thể dùng dữ liệu gửi lên để cải thiện dịch vụ — không dùng cho nội dung mật.</div>
+    <div class="hint">Mã chỉ lưu trên điện thoại này. Lưu ý: với gói miễn phí, Google có thể dùng dữ liệu gửi lên để cải thiện dịch vụ — không dùng cho nội dung mật.</div>
   </div>
 
   <div class="card">
@@ -305,7 +344,7 @@ a{color:var(--blue)}
   </div>
 
   <div class="card">
-    <h2>Nâng cao</h2>
+    <h2>Nâng cao (không cần sửa)</h2>
     <label class="f">Mô hình soạn văn bản</label><select id="sModel"></select>
     <label class="f">Mô hình giọng đọc</label><select id="sTtsModel"></select>
     <div class="hint">Để “Tự động” — ứng dụng tự chọn mô hình miễn phí tốt nhất và tự đổi khi hết lượt.</div>
@@ -314,29 +353,23 @@ a{color:var(--blue)}
 </section>
 </main>
 
-<nav class="bar">
-  <button data-tab="field" class="on"><i>🎙</i>Hiện trường</button>
-  <button data-tab="report"><i>📄</i>Báo cáo</button>
-  <button data-tab="export"><i>📤</i>Xuất &amp; gửi</button>
-  <button data-tab="settings"><i>⚙</i>Cài đặt</button>
-</nav>
-
-<!-- Hộp thoại nói để sửa -->
-<div class="dlg" id="dlgEdit"><div class="sheet">
-  <h3>🎙 Nói để sửa / bổ sung</h3>
-  <div class="muted">Ví dụ: “Sửa chiều dài khối sạt thành 40 mét”, “Thêm vào phần kiến nghị: đề nghị cắm biển cảnh báo”, “Bỏ đoạn nói về nhà thầu”, “Viết ngắn gọn lại mục hai”.</div>
-  <div class="vrec">
-    <button class="recbtn" id="editRecBtn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v7a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V22h2v-3.08A7 7 0 0 0 19 12h-2z"/></svg><span id="editRecLbl">BẤM ĐỂ NÓI</span></button>
-    <div class="timer" id="editTimer">00:00</div>
+<!-- Hộp hội thoại nói để sửa -->
+<div class="dlg" id="dlgEdit"><div class="sheet chat">
+  <div class="row" style="justify-content:space-between;margin-bottom:6px"><h3 style="margin:0">🎙 Nói để sửa</h3><button class="btn sm" id="editCancel">Đóng</button></div>
+  <div class="chatlist" id="chatList"></div>
+  <div id="chatActions" class="row3" style="display:none">
+    <button class="btn" id="btnChatUndo">↶ Hoàn tác</button>
+    <button class="btn acc" id="btnChatMore">🎙 Nói tiếp</button>
+    <button class="btn grn" id="btnChatOk">✓ Đúng rồi</button>
   </div>
-  <label class="f">…hoặc gõ yêu cầu sửa</label>
-  <textarea id="editText" style="min-height:60px" placeholder="Gõ yêu cầu sửa…"></textarea>
-  <div class="row" style="margin-top:10px">
-    <button class="btn" id="editCancel" style="flex:1">Đóng</button>
-    <button class="btn acc" id="editSend" style="flex:2">Gửi yêu cầu sửa</button>
+  <div id="chatInput">
+    <div class="vrec">
+      <button class="recbtn sm" id="editRecBtn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v7a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V22h2v-3.08A7 7 0 0 0 19 12h-2z"/></svg><span id="editRecLbl">BẤM ĐỂ NÓI</span></button>
+      <div class="timer" id="editTimer">00:00</div>
+    </div>
+    <div class="row"><input type="text" id="editText" placeholder="…hoặc gõ yêu cầu sửa" style="flex:1"><button class="btn acc" id="editSend">Gửi</button></div>
   </div>
 </div></div>
-
 <!-- Hộp thoại tạo mới -->
 <div class="dlg" id="dlgNew"><div class="sheet">
   <h3>＋ Báo cáo mới</h3>
@@ -36919,18 +36952,41 @@ function confirmBox(title, msg, yes = 'Đồng ý') {
     $('#cfYes').onclick = () => fin(true); $('#cfNo').onclick = () => fin(false);
   });
 }
+let curTab = 'field', lastStep = 'field';
 function showTab(name) {
+  curTab = name; if (['field', 'report', 'export'].includes(name)) lastStep = name;
   $$('.tab').forEach(t => t.classList.toggle('on', t.id === 'tab-' + name));
-  $$('nav.bar button').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
+  $$('#stepsBar button').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
+  $('#stepsBar').classList.toggle('hide', name === 'welcome' || name === 'settings');
   window.scrollTo(0, 0);
   if (name !== 'report') stopReading();
+  if (name === 'export') prepareExport();
 }
-$$('nav.bar button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+$$('#stepsBar button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+$('#btnSettings').onclick = () => showTab(curTab === 'settings' ? lastStep : 'settings');
+$('#btnSetBack').onclick = () => showTab(S.key ? lastStep : 'welcome');
+$('#btnGoWelcome').onclick = () => showTab('welcome');
+
+/* ---------------- Màn hình chào: kết nối AI 1 lần ---------------- */
+$('#wPaste').onclick = async () => { try { const t = await navigator.clipboard.readText(); if (t) $('#wKey').value = t.trim(); } catch (e) { toast('Nhấn giữ vào ô rồi chọn “Dán”.'); $('#wKey').focus(); } };
+$('#wSkip').onclick = () => showTab('field');
+$('#wDone').onclick = async () => {
+  const key = $('#wKey').value.trim().replace(/\s+/g, '');
+  if (!key) { $('#wMsg').innerHTML = '<div class="warn">Chưa có mã. Bấm ① để lấy mã, rồi dán vào ô ②.</div>'; return; }
+  if (!/^AIza/.test(key)) { $('#wMsg').innerHTML = '<div class="warn">Mã chưa đúng: mã đúng bắt đầu bằng <b>AIza</b>. Hãy sao chép lại từ trang Google.</div>'; return; }
+  $('#wMsg').innerHTML = '<div class="muted">Đang kiểm tra…</div>';
+  try {
+    const { text, tts } = await listModels(key);
+    S.key = key; if (text.length) S.models = text; if (tts.length) S.ttsModels = tts; saveS(); loadSettingsUI(); renderHeader();
+    $('#wMsg').innerHTML = '<div class="ok">✅ Kết nối thành công!</div>';
+    setTimeout(() => { showTab('field'); toast('Xong! Bấm nút đỏ và nói để bắt đầu.', 4000); }, 700);
+  } catch (e) { $('#wMsg').innerHTML = `<div class="err">${esc(/kết nối|fetch|network/i.test(e.message) ? 'Không có mạng. Kiểm tra 4G/Wi-Fi rồi bấm lại.' : 'Mã không dùng được. Sao chép lại mã từ trang Google (bấm ①) rồi thử lại.')}</div>`; }
+};
 function renderHeader() {
   const t = C && C.report ? (C.loai === 'nhanh' ? 'Báo cáo nhanh' + (C.report.cap_nhat ? ' – ' + C.report.cap_nhat.replace(/ phút/, '').replace(/ giờ /, 'h') : '') : (C.report.trich_yeu || 'Báo cáo')) : (C.loai === 'nhanh' ? 'Báo cáo nhanh mưa lũ (mới)' : 'Báo cáo kiểm tra (mới)');
   $('#caseTitle').textContent = t;
   $('#caseSub').textContent = `Tạo ${fmtTime(C.created)} · ${C.clips.length} ghi âm · ${(C.videos || []).length} clip · ${C.photos.length} ảnh`;
-  $('#setupWarn').style.display = S.key ? 'none' : '';
+  $('#setupWarn').style.display = S.key ? 'none' : 'flex';
 }
 
 /* ---------------- Vị trí GPS ---------------- */
@@ -37003,7 +37059,7 @@ $('#recBtn').onclick = async () => {
     recPos = null; getPos().then(p => recPos = p);
   } else {
     const { blob, dur } = await fieldRec.stop();
-    b.classList.remove('on'); $('#recLbl').textContent = 'BẤM ĐỂ GHI'; $('#recTimer').textContent = '00:00';
+    b.classList.remove('on'); $('#recLbl').textContent = 'BẤM ĐỂ NÓI'; $('#recTimer').textContent = '00:00';
     if (dur < 1) return toast('Đoạn ghi quá ngắn.');
     const id = uid(); await putBlob(id, blob);
     C.clips.push({ id, mime: blob.type, dur, time: Date.now() - dur * 1000, gps: recPos || lastPos, used: false });
@@ -37167,14 +37223,14 @@ function updateGenBtn() {
   const nNew = C.clips.filter(c => !c.used).length + (C.videos || []).filter(v => !v.used).length, pNew = C.photos.filter(p => !p.used).length;
   const b = $('#btnGen'), h = $('#genHint');
   if (!C.report) {
-    b.textContent = '✨ Soạn báo cáo';
+    b.textContent = '✨ Làm báo cáo';
     b.disabled = !(C.clips.length || C.notes.trim() || C.photos.length || (C.videos || []).length);
-    h.textContent = b.disabled ? 'Ghi âm hoặc quay clip ít nhất 1 đoạn để bắt đầu.' : 'Mất khoảng 20–60 giây. Cần có sóng 3G/4G.';
+    h.textContent = b.disabled ? 'Bấm nút đỏ và nói, hoặc chụp ảnh / quay clip.' : 'Mất khoảng 20–60 giây, cần có sóng 4G.';
   } else {
     const n = nNew + pNew;
-    b.textContent = n ? `✨ Cập nhật báo cáo (${nNew} ghi âm/clip, ${pNew} ảnh mới)` : (C.inherited && !C.clips.length ? '📄 Xem báo cáo kế thừa' : '📄 Xem báo cáo');
+    b.textContent = n ? `✨ Cập nhật báo cáo (${nNew + pNew} mục mới)` : '→ Xem báo cáo';
     b.disabled = false;
-    h.textContent = n ? 'AI sẽ bổ sung thông tin mới vào báo cáo đang có.' : 'Ghi thêm âm/ảnh mới để cập nhật diễn biến.';
+    h.textContent = n ? 'AI bổ sung thông tin mới vào báo cáo đang có.' : 'Có diễn biến mới? Nói / chụp thêm rồi bấm cập nhật.';
   }
 }
 
@@ -37459,7 +37515,7 @@ async function runNhanh({ clips = [], photos = [], notes = false, edit = null, v
   rep.chu_thich_anh = C.photos.map(p => p.caption || '');
   const tr = String(data.ban_ghi || '').trim();
   if (tr) rep.ban_ghi = (rep.ban_ghi ? rep.ban_ghi + '\n\n' : '') + `— ${edit ? 'Yêu cầu sửa' : 'Ghi âm'} lúc ${fmtTime(now)} —\n` + tr;
-  return { rep, changed, say: String(data.thay_doi || '') };
+  return { rep, changed, say: String(data.thay_doi || ''), heard: tr };
 }
 
 /* ----- Mẫu Kiểm tra 1 vị trí: AI trả toàn văn ----- */
@@ -37482,13 +37538,14 @@ async function runKiemtra({ clips = [], photos = [], notes = false, edit = null,
   if (!rep.chu_thich_anh.length && C.report) rep.chu_thich_anh = C.report.chu_thich_anh;
   C.photos.forEach((p, i) => { if (rep.chu_thich_anh[i]) p.caption = rep.chu_thich_anh[i]; });
   if (videos.length) { busySub('Cắt ảnh từ clip'); await framesToPhotos(data.chon_khung, videos); rep.chu_thich_anh = C.photos.map(p => p.caption || ''); }
+  const heard = String(data.ban_ghi || '');
   const old = C.report ? C.report.ban_ghi || '' : '';
   rep.ban_ghi = edit ? old : (old ? old + '\n\n— Cập nhật ' + fmtTime(now) + ' —\n' : '') + (rep.ban_ghi || '');
-  return { rep, changed: C.report ? diffPaths(C.report, rep) : null, say };
+  return { rep, changed: C.report ? diffPaths(C.report, rep) : null, say, heard };
 }
 
 async function genReport() {
-  if (!S.key) { toast('Cần khóa AI trước — mở ⚙ Cài đặt.', 4000); showTab('settings'); return; }
+  if (!S.key) { toast('Cần kết nối AI trước (làm 1 lần).', 4000); showTab('welcome'); return; }
   const updating = !!C.report;
   const clips = C.clips.filter(c => !c.used);
   const photos = C.photos.map((p, i) => ({ p, i })).filter(x => !x.p.used);
@@ -37548,7 +37605,7 @@ const photoMeta = p => `${p.src === 'clip' ? 'Cắt từ clip quay lúc' : 'Ch�
 /* ---------------- Hiển thị báo cáo ---------------- */
 function hl(t) { return esc(t).replace(/(…+|\.{3,})/g, '<span class="blank">$1</span>'); }
 function renderReport(changedPaths) {
-  const has = !!C.report; $('#repEmpty').style.display = has ? 'none' : ''; $('#repWrap').style.display = has ? '' : 'none';
+  const has = !!C.report; $('#repEmpty').style.display = has ? 'none' : ''; $('#repWrap').style.display = has ? '' : 'none'; $('#repCta').style.display = has ? '' : 'none';
   renderHeader(); updateGenBtn(); renderTpl();
   if (!has) return;
   const r = C.report; const now = new Date(); const nhanh = C.loai === 'nhanh';
@@ -37568,6 +37625,8 @@ function renderReport(changedPaths) {
         const inc = DocBuild.isIncident(t);
         h += `<p class="rt${inc ? ' inc' : ''}"><b>${gi + 1}.${ti + 1}. ${esc(t.ten)}:</b> <span contenteditable="true" data-path="nhom.${gi}.tuyen.${ti}.tinh_hinh">${hl(t.tinh_hinh)}</span></p>`;
       });
+      const nOk = g.tuyen.filter(t => !DocBuild.isIncident(t)).length;
+      if (nOk) h += `<p class="more" data-more="1">+ ${nOk} tuyến bình thường — chạm để xem</p>`;
     });
   } else {
     const kg = (r.kinh_gui.length ? r.kinh_gui : S.recipients.split('\n')).filter(x => x.trim());
@@ -37589,6 +37648,7 @@ function renderReport(changedPaths) {
   }
   $('#doc').innerHTML = h;
   $('#onlyIncWrap').style.display = nhanh ? 'flex' : 'none';
+  $$('#doc [data-more]').forEach(el => el.onclick = () => { $('#onlyInc').checked = false; $('#doc').classList.remove('onlyinc'); });
   $('#doc').classList.toggle('onlyinc', nhanh && $('#onlyInc').checked);
   $$('#doc img[data-pid]').forEach(async im => { im.src = await blobUrl(im.dataset.pid); });
   $$('#doc [data-path]').forEach(el => el.addEventListener('blur', () => onManualEdit(el)));
@@ -37627,7 +37687,7 @@ function splitSentences(t) {
   for (const s of t.split(/(?<=[.;:!?])\s+/)) { if ((cur + ' ' + s).length > 220 && cur) { out.push(cur); cur = s; } else cur = cur ? cur + ' ' + s : s; }
   if (cur) out.push(cur); return out;
 }
-function stopReading() { reading = false; try { speechSynthesis.cancel(); } catch (e) { } $$('#doc .speaking').forEach(e => e.classList.remove('speaking')); $('#btnRead').textContent = '🔊 Đọc cho tôi nghe'; }
+function stopReading() { reading = false; try { speechSynthesis.cancel(); } catch (e) { } $$('#doc .speaking').forEach(e => e.classList.remove('speaking')); $('#btnRead').textContent = '🔊 Nghe'; }
 async function readReport() {
   if (reading) return stopReading();
   if (!('speechSynthesis' in window)) return toast('Máy không hỗ trợ đọc. Dùng nút 🎧 Nghe giọng AI.', 4000);
@@ -37635,7 +37695,7 @@ async function readReport() {
   const v = viVoice();
   if (!v) toast('Máy chưa có giọng đọc tiếng Việt: vào Cài đặt điện thoại → Chuyển văn bản thành giọng nói → Google → cài “Tiếng Việt”. Hoặc dùng 🎧 Nghe giọng AI.', 7000);
   const segs = DocBuild.speechSegments(C.report);
-  reading = true; $('#btnRead').textContent = '⏹ Dừng đọc';
+  reading = true; $('#btnRead').textContent = '⏹ Dừng';
   for (const seg of segs) {
     if (!reading) break;
     const el = $(`#doc [data-path="${seg.path}"]`);
@@ -37656,39 +37716,61 @@ async function readReport() {
 $('#btnRead').onclick = readReport;
 $('#onlyInc').onchange = () => $('#doc').classList.toggle('onlyinc', C.loai === 'nhanh' && $('#onlyInc').checked);
 
-/* ---------------- Nói để sửa ---------------- */
+/* ---------------- Nói để sửa (hội thoại) ---------------- */
 const editRec = new Rec($('#editTimer'), null);
-let editClip = null;
-$('#btnVoiceEdit').onclick = () => { stopReading(); editClip = null; $('#editText').value = ''; $('#editTimer').textContent = '00:00'; $('#editRecLbl').textContent = 'BẤM ĐỂ NÓI'; $('#dlgEdit').classList.add('on'); };
-$('#editCancel').onclick = async () => { if (editRec.on) await editRec.stop(); $('#editRecBtn').classList.remove('on'); $('#dlgEdit').classList.remove('on'); };
+function chatAdd(who, html, cls = '') {
+  const el = document.createElement('div'); el.className = `bub ${who} ${cls}`; el.innerHTML = html;
+  const list = $('#chatList'); list.querySelector('.chat-empty')?.remove(); list.appendChild(el); list.scrollTop = list.scrollHeight; return el;
+}
+function chatMode(afterResult) { $('#chatActions').style.display = afterResult ? 'grid' : 'none'; $('#chatInput').style.display = afterResult ? 'none' : ''; }
+function openChat() {
+  stopReading(); $('#editText').value = ''; $('#editTimer').textContent = '00:00'; $('#editRecLbl').textContent = 'BẤM ĐỂ NÓI';
+  if (!$('#chatList').children.length) $('#chatList').innerHTML = `<div class="chat-empty">Bấm nút đỏ và nói yêu cầu, ví dụ:<br>“QL19C sửa nước tràn thành 50 phân”<br>“Thêm ĐT.633 Km5 sạt taluy, đã huy động máy xúc”<br>“ĐT.629 đã thông xe lúc 11 giờ”</div>`;
+  chatMode(false); $('#dlgEdit').classList.add('on');
+}
+function speakSeq(texts) {
+  if (!('speechSynthesis' in window)) return; try { speechSynthesis.cancel(); } catch (e) { }
+  const v = viVoice();
+  texts.filter(Boolean).forEach(t => splitSentences(DocBuild.speakable(t)).forEach(x => { const u = new SpeechSynthesisUtterance(x); u.lang = 'vi-VN'; if (v) u.voice = v; u.rate = parseFloat(S.rate) || 1; speechSynthesis.speak(u); }));
+}
+$('#btnVoiceEdit').onclick = openChat;
+$('#editCancel').onclick = async () => { if (editRec.on) await editRec.stop(); $('#editRecBtn').classList.remove('on'); try { speechSynthesis.cancel(); } catch (e) { } $('#dlgEdit').classList.remove('on'); };
 $('#editRecBtn').onclick = async () => {
   if (!editRec.on) {
+    try { speechSynthesis.cancel(); } catch (e) { }
     try { await editRec.start(); } catch (e) { return toast(micErr(e), 5000); }
-    $('#editRecBtn').classList.add('on'); $('#editRecLbl').textContent = 'BẤM ĐỂ XONG';
+    $('#editRecBtn').classList.add('on'); $('#editRecLbl').textContent = 'BẤM KHI NÓI XONG';
   } else {
-    const r = await editRec.stop(); $('#editRecBtn').classList.remove('on');
-    if (r.dur < 0.8) { $('#editRecLbl').textContent = 'BẤM ĐỂ NÓI'; return toast('Quá ngắn, nói lại nhé.'); }
-    editClip = r; $('#editRecLbl').textContent = 'ĐÃ GHI ✓';
-    sendEdit();
+    const r = await editRec.stop(); $('#editRecBtn').classList.remove('on'); $('#editRecLbl').textContent = 'BẤM ĐỂ NÓI';
+    if (r.dur < 0.8) return toast('Quá ngắn, nói lại nhé.');
+    sendEdit(r, '');
   }
 };
-$('#editSend').onclick = async () => { if (editRec.on) { editClip = await editRec.stop(); $('#editRecBtn').classList.remove('on'); } sendEdit(); };
-async function sendEdit() {
-  const typed = $('#editText').value.trim();
-  if (!editClip && !typed) return toast('Hãy nói hoặc gõ yêu cầu sửa.');
-  if (!S.key) { toast('Cần khóa AI trước — mở ⚙ Cài đặt.', 4000); return; }
-  $('#dlgEdit').classList.remove('on');
-  busy('AI đang sửa báo cáo…', 'Gửi yêu cầu');
+$('#editSend').onclick = () => { const t = $('#editText').value.trim(); if (!t) return toast('Gõ yêu cầu sửa, hoặc bấm nút đỏ để nói.'); $('#editText').value = ''; sendEdit(null, t); };
+$('#editText').onkeydown = e => { if (e.key === 'Enter') $('#editSend').onclick(); };
+$('#btnChatMore').onclick = () => { chatMode(false); $('#editRecBtn').onclick(); };
+$('#btnChatOk').onclick = () => { try { speechSynthesis.cancel(); } catch (e) { } $('#dlgEdit').classList.remove('on'); toast('Đã chốt nội dung.'); };
+$('#btnChatUndo').onclick = async () => { await $('#btnUndo').onclick(); chatAdd('ai', '↶ Đã quay lại bản trước.'); chatMode(false); };
+async function sendEdit(clip, typed) {
+  if (!S.key) { toast('Cần kết nối AI trước (làm 1 lần).', 4000); return; }
+  const meEl = chatAdd('me', clip ? '🎙 <i>(đang nghe lời anh/chị…)</i>' : esc(typed));
+  const wait = chatAdd('ai', 'Đang sửa…', 'wait'); chatMode(false); $('#chatInput').style.display = 'none';
+  ovAbort = new AbortController();
   try {
     const run = C.loai === 'nhanh' ? runNhanh : runKiemtra;
-    const { rep, changed, say } = await run({ edit: { clip: editClip, typed } });
-    pushUndo();
-    C.report = rep; C.mp3Stale = true; C.docxId = null; await saveCase(); done();
+    const { rep, changed, say, heard } = await run({ edit: { clip, typed } });
+    if (clip) meEl.innerHTML = '🎙 ' + esc(heard || '(đã ghi âm)');
+    pushUndo(); C.report = rep; C.mp3Stale = true; C.docxId = null; await saveCase();
     renderReport(changed);
-    const first = $('#doc .changed'); if (first) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    toast('Đã sửa: ' + (say || 'xong'), 4500);
-    if (say && 'speechSynthesis' in window) { const u = new SpeechSynthesisUtterance('Đã sửa. ' + say); u.lang = 'vi-VN'; const v = viVoice(); if (v) u.voice = v; speechSynthesis.speak(u); }
-  } catch (e) { done(); if (!/hủy/.test(e.message)) showErr(e); }
+    const texts = (changed || []).filter(p => p !== 'cap_nhat').slice(0, 3).map(p => getPath(C.report, p)).filter(x => typeof x === 'string');
+    wait.classList.remove('wait');
+    wait.innerHTML = '✅ ' + esc(say || 'Đã sửa xong.') + texts.map(t => `<q>${hl(t.length > 320 ? t.slice(0, 320) + '…' : t)}</q>`).join('');
+    chatMode(true);
+    speakSeq(['Đã sửa. ' + (say || ''), ...texts]);
+  } catch (e) {
+    wait.classList.remove('wait'); wait.innerHTML = '⚠️ ' + esc(/hủy/.test(e.message) ? 'Đã hủy.' : e.message); chatMode(false);
+  }
+  ovAbort = null;
 }
 function diffPaths(a, b) {
   const out = []; const cmp = (p, x, y) => { if ((x || '') !== (y || '')) out.push(p); };
@@ -37702,9 +37784,9 @@ function renderTpl() {
   const el = $('#tplSeg'); if (!el) return;
   const locked = !!C.report;
   el.querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.t === C.loai); b.disabled = locked && b.dataset.t !== C.loai; });
-  $('#tplHint').textContent = C.loai === 'nhanh'
-    ? 'Chỉ cần nói về TUYẾN CÓ SỰ CỐ (tên tuyến, lý trình, tình hình, đã xử lý gì). Các tuyến khác AI giữ nguyên. Căn cứ: nói ngắn tên văn bản, AI tự tra.'
-    : 'Nói tự nhiên: ở đâu, lúc mấy giờ, thấy gì, số liệu, đã làm gì, đề xuất gì.';
+  $('#tplName').textContent = C.loai === 'nhanh' ? '⚡ Báo cáo nhanh mưa lũ' : '🔍 Báo cáo kiểm tra 1 vị trí';
+  $('#tplSeg').style.display = locked ? 'none' : '';
+  $('#tplHint').textContent = C.loai === 'nhanh' ? 'Nói tuyến nào, Km mấy, tình hình ra sao, đã xử lý gì.' : 'Nói ở đâu, thấy gì, số liệu, đã làm gì, đề xuất gì.';
 }
 $$('#tplSeg button').forEach(b => b.onclick = async () => { if (C.report) return; C.loai = b.dataset.t; S.lastLoai = C.loai; saveS(); await saveCase(); renderTpl(); renderHeader(); });
 
@@ -37744,12 +37826,6 @@ async function makeMp3(signal) {
   C.mp3Id = uid(); await putBlob(C.mp3Id, blob); C.mp3Stale = false; await saveCase();
   return blob;
 }
-$('#btnAiListen').onclick = async () => {
-  stopReading();
-  const signal = busy('Đang tạo giọng đọc AI…', '');
-  try { const b = await makeMp3(signal); done(); const a = $('#mp3Player'); a.src = URL.createObjectURL(b); a.style.display = ''; showTab('export'); renderFiles(); a.play().catch(() => { }); }
-  catch (e) { done(); if (!/hủy/.test(e.message)) showErr(e); }
-};
 
 /* ---------------- Xuất file ---------------- */
 function baseName() {
@@ -37769,19 +37845,27 @@ async function makeDocx() {
 }
 let outFiles = [];
 $('#btnGoExport').onclick = () => { stopReading(); showTab('export'); };
-$('#btnExport').onclick = async () => {
-  if (!C.report) return toast('Chưa có báo cáo.');
-  const signal = busy('Đang tạo file…', 'File Word');
+let preparing = false;
+function filesReady() { return !!(C.report && C.docxId && C.mp3Id && !C.mp3Stale); }
+async function prepareExport(force) {
+  if (!C.report) { $('#expMsg').innerHTML = '<div class="warn">Chưa có báo cáo. Quay lại bước 1.</div>'; $('#fileList').innerHTML = ''; return; }
+  if (preparing) return;
+  if (!force && filesReady()) { await renderFiles(); $('#expMsg').innerHTML = '<div class="ok">Đã sẵn sàng: file Word + file MP3. Bấm <b>📤 Gửi</b>.</div>'; return; }
+  preparing = true; $('#btnShare').disabled = true;
+  const signal = busy('Đang tạo file Word…', '');
   $('#expMsg').innerHTML = '';
   try {
-    const d = await makeDocx();
-    let m = null, mErr = null;
-    try { busySub('Giọng đọc MP3'); $('#ovMsg').textContent = 'Đang tạo giọng đọc MP3…'; m = await makeMp3(signal); }
+    if (force) { C.docxId = null; C.mp3Stale = true; }
+    await makeDocx();
+    let mErr = null;
+    try { $('#ovMsg').textContent = 'Đang tạo file đọc MP3…'; await makeMp3(signal); }
     catch (e) { if (/hủy/.test(e.message)) throw e; mErr = e; }
-    done(); renderFiles();
-    $('#expMsg').innerHTML = mErr ? `<div class="warn">Đã tạo file Word. Chưa tạo được MP3: ${esc(mErr.message)} — bấm lại “Tạo file” sau ít phút để thử lại MP3.</div>` : `<div class="ok">Đã tạo xong 2 file. Bấm <b>📤 Gửi</b> bên dưới.</div>`;
-  } catch (e) { done(); if (!/hủy/.test(e.message)) showErr(e); }
-};
+    done(); await renderFiles();
+    $('#expMsg').innerHTML = mErr ? `<div class="warn">Đã có file Word. Chưa tạo được MP3 (${esc(mErr.message)}). Có thể gửi file Word trước, hoặc bấm “Tạo lại file” sau ít phút.</div>` : '<div class="ok">Đã sẵn sàng: file Word + file MP3. Bấm <b>📤 Gửi</b>.</div>';
+  } catch (e) { done(); if (!/hủy/.test(e.message)) $('#expMsg').innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+  $('#btnExport').style.display = ''; preparing = false; $('#btnShare').disabled = false;
+}
+$('#btnExport').onclick = () => prepareExport(true);
 async function renderFiles() {
   const name = baseName(); outFiles = [];
   const d = C.docxId ? await getBlob(C.docxId) : null; const m = C.mp3Id && !C.mp3Stale ? await getBlob(C.mp3Id) : null;
@@ -37789,7 +37873,6 @@ async function renderFiles() {
   if (m) outFiles.push(new File([m], name + (m.type === 'audio/wav' ? '.wav' : '.mp3'), { type: m.type || 'audio/mpeg' }));
   $('#withClipWrap').style.display = (C.videos || []).length ? '' : 'none';
   if ($('#withClip').checked) for (const [i, v] of (C.videos || []).entries()) { const vb = await getBlob(v.id); if (vb) outFiles.push(new File([vb], `${name}_clip${i + 1}.${/quicktime|mov/i.test(v.type) ? 'mov' : /webm/.test(v.type) ? 'webm' : 'mp4'}`, { type: v.type || 'video/mp4' })); }
-  $('#fileCard').style.display = outFiles.length ? '' : 'none';
   $('#fileList').innerHTML = outFiles.map((f, i) => `<div class="item"><div class="ficon" style="background:${/docx$/.test(f.name) ? '#2b579a' : '#c2410c'}">${/docx$/.test(f.name) ? 'DOCX' : /wav$/.test(f.name) ? 'WAV' : /mp3$/.test(f.name) ? 'MP3' : 'CLIP'}</div>
     <div class="grow"><b style="word-break:break-all">${esc(f.name)}</b><small>${f.size > 2e6 ? (f.size / 1048576).toFixed(1) + ' MB' : (f.size / 1024).toFixed(0) + ' KB'}</small></div><button class="btn sm" data-dl="${i}">⬇ Tải về</button></div>`).join('');
   $$('#fileList [data-dl]').forEach(b => b.onclick = () => download(outFiles[+b.dataset.dl]));
@@ -37797,7 +37880,7 @@ async function renderFiles() {
 }
 function download(f) { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); }
 $('#btnShare').onclick = async () => {
-  if (!outFiles.length) return;
+  if (!outFiles.length || !filesReady()) { await prepareExport(); if (outFiles.length) toast('File đã sẵn sàng — bấm 📤 Gửi lần nữa.', 4000); return; }
   const title = 'Báo cáo: ' + (C.report.trich_yeu || '');
   const text = `Kính gửi lãnh đạo, em gửi ${title}. File Word và file ghi âm đọc báo cáo kèm theo${outFiles.some(f => /_clip/.test(f.name)) ? ', cùng clip hiện trường' : ''}.`;
   if (navigator.canShare) {
@@ -37886,13 +37969,13 @@ $('#btnTest').onclick = async () => {
 };
 
 /* ---------------- Khởi động ---------------- */
-function renderAll() { if (!C.videos) C.videos = []; if (!C.loai) C.loai = (C.report && C.report.loai) || 'kiemtra'; $('#notes').value = C.notes || ''; renderClips(); renderPhotos(); renderReport(); renderHeader(); outFiles = []; $('#fileCard').style.display = 'none'; $('#expMsg').innerHTML = ''; if (C.report) renderFiles(); }
+function renderAll() { if (!C.videos) C.videos = []; if (!C.loai) C.loai = (C.report && C.report.loai) || 'kiemtra'; $('#notes').value = C.notes || ''; renderClips(); renderPhotos(); renderReport(); renderHeader(); outFiles = []; $('#fileList').innerHTML = ''; $('#expMsg').innerHTML = ''; $('#chatList').innerHTML = ''; }
 window.addEventListener('beforeunload', e => { if (fieldRec.on) { e.preventDefault(); e.returnValue = ''; } });
 (async () => {
   loadSettingsUI();
   try { await loadCurrent(); } catch (e) { C = newCaseObj(); toast('Trình duyệt chặn lưu trữ — dữ liệu sẽ mất khi đóng trang.', 6000); }
   renderAll();
-  if (!S.key) { showTab('settings'); toast('Bước đầu tiên: dán khóa AI miễn phí.', 4000); }
+  showTab(!S.key ? 'welcome' : (C.report ? 'report' : 'field'));
   if (!window.isSecureContext) toast('Hãy mở ứng dụng qua đường link https (không mở file trực tiếp) để dùng được micro.', 7000);
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => { });
   setTimeout(loadLame, 3000); // tải sẵn bộ nén MP3 khi còn sóng
