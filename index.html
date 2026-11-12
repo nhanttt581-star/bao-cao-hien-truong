@@ -37711,30 +37711,39 @@ function splitSentences(t) {
   if (cur) out.push(cur); return out;
 }
 function stopReading() { reading = false; try { speechSynthesis.cancel(); } catch (e) { } $$('#doc .speaking').forEach(e => e.classList.remove('speaking')); $('#btnRead').textContent = '🔊 Nghe'; }
-async function readReport() {
+// iPhone/Safari: lệnh đọc phải chạy ngay trong lúc bấm, không được chờ (await) trước
+let ttsUnlocked = false;
+function unlockTTS() {
+  if (ttsUnlocked || !('speechSynthesis' in window)) return;
+  try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; u.lang = 'vi-VN'; speechSynthesis.speak(u); ttsUnlocked = true; } catch (e) { }
+}
+function readReport() {
   if (reading) return stopReading();
-  if (!('speechSynthesis' in window)) return toast('Máy không hỗ trợ đọc. Dùng nút 🎧 Nghe giọng AI.', 4000);
-  if (!speechSynthesis.getVoices().length) await new Promise(r => { speechSynthesis.onvoiceschanged = r; setTimeout(r, 1200); });
+  if (!('speechSynthesis' in window)) return toast('Máy không hỗ trợ đọc. Sang bước 3 Gửi để nghe file MP3.', 4000);
+  try { speechSynthesis.cancel(); } catch (e) { }
   const v = viVoice();
-  if (!v) toast('Máy chưa có giọng đọc tiếng Việt: vào Cài đặt điện thoại → Chuyển văn bản thành giọng nói → Google → cài “Tiếng Việt”. Hoặc dùng 🎧 Nghe giọng AI.', 7000);
   const segs = DocBuild.speechSegments(C.report);
   reading = true; $('#btnRead').textContent = '⏹ Dừng';
-  for (const seg of segs) {
-    if (!reading) break;
-    const el = $(`#doc [data-path="${seg.path}"]`);
-    $$('#doc .speaking').forEach(e => e.classList.remove('speaking'));
-    if (el) { el.classList.add('speaking'); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
-    for (const s of splitSentences(seg.text)) {
-      if (!reading) break;
-      await new Promise(res => {
-        const u = new SpeechSynthesisUtterance(s); u.lang = 'vi-VN'; if (v) u.voice = v; u.rate = parseFloat(S.rate) || 1;
-        let fin = false; const t0 = Date.now(); const end = () => { if (!fin) { fin = true; clearInterval(guard); res(); } };
-        u.onend = end; u.onerror = end; speechSynthesis.speak(u);
-        const guard = setInterval(() => { if (!reading) end(); else if (Date.now() - t0 > 3000 && !speechSynthesis.speaking && !speechSynthesis.pending) end(); }, 500);
-      });
+  let started = false, count = 0, total = 0;
+  segs.forEach((seg, si) => splitSentences(seg.text).forEach((s, k) => {
+    total++;
+    const u = new SpeechSynthesisUtterance(s); u.lang = 'vi-VN'; if (v) u.voice = v; u.rate = parseFloat(S.rate) || 1;
+    u.onstart = () => {
+      started = true; if (!reading || k) return;
+      $$('#doc .speaking').forEach(e => e.classList.remove('speaking'));
+      const el = $(`#doc [data-path="${seg.path}"]`);
+      if (el) { el.classList.add('speaking'); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+    };
+    u.onend = u.onerror = () => { count++; if (count >= total && reading) stopReading(); };
+    speechSynthesis.speak(u);
+  }));
+  ttsUnlocked = true;
+  setTimeout(() => {
+    if (reading && !started && !speechSynthesis.speaking) {
+      stopReading();
+      toast(v ? 'Không phát được tiếng: kiểm tra nút gạt im lặng bên hông iPhone và tăng âm lượng, rồi bấm lại 🔊 Nghe.' : 'Máy chưa có giọng đọc tiếng Việt. iPhone: Cài đặt → Trợ năng → Nội dung được đọc → Giọng nói → Tiếng Việt (tải về). Android: Cài đặt → Chuyển văn bản thành giọng nói → Google → Tiếng Việt.', 9000);
     }
-  }
-  stopReading();
+  }, 3500);
 }
 $('#btnRead').onclick = readReport;
 $('#onlyInc').onchange = () => $('#doc').classList.toggle('onlyinc', C.loai === 'nhanh' && $('#onlyInc').checked);
@@ -37756,9 +37765,10 @@ function speakSeq(texts) {
   const v = viVoice();
   texts.filter(Boolean).forEach(t => splitSentences(DocBuild.speakable(t)).forEach(x => { const u = new SpeechSynthesisUtterance(x); u.lang = 'vi-VN'; if (v) u.voice = v; u.rate = parseFloat(S.rate) || 1; speechSynthesis.speak(u); }));
 }
-$('#btnVoiceEdit').onclick = openChat;
+$('#btnVoiceEdit').onclick = () => { unlockTTS(); openChat(); };
 $('#editCancel').onclick = async () => { if (editRec.on) await editRec.stop(); $('#editRecBtn').classList.remove('on'); try { speechSynthesis.cancel(); } catch (e) { } $('#dlgEdit').classList.remove('on'); };
 $('#editRecBtn').onclick = async () => {
+  unlockTTS();
   if (!editRec.on) {
     try { speechSynthesis.cancel(); } catch (e) { }
     try { await editRec.start(); } catch (e) { return toast(micErr(e), 5000); }
@@ -37769,7 +37779,7 @@ $('#editRecBtn').onclick = async () => {
     sendEdit(r, '');
   }
 };
-$('#editSend').onclick = () => { const t = $('#editText').value.trim(); if (!t) return toast('Gõ yêu cầu sửa, hoặc bấm nút đỏ để nói.'); $('#editText').value = ''; sendEdit(null, t); };
+$('#editSend').onclick = () => { unlockTTS(); const t = $('#editText').value.trim(); if (!t) return toast('Gõ yêu cầu sửa, hoặc bấm nút đỏ để nói.'); $('#editText').value = ''; sendEdit(null, t); };
 $('#editText').onkeydown = e => { if (e.key === 'Enter') $('#editSend').onclick(); };
 $('#btnChatMore').onclick = () => { chatMode(false); $('#editRecBtn').onclick(); };
 $('#btnChatOk').onclick = () => { try { speechSynthesis.cancel(); } catch (e) { } $('#dlgEdit').classList.remove('on'); toast('Đã chốt nội dung.'); };
@@ -38015,6 +38025,7 @@ function takeKeyFromLink() {
   return true;
 }
 /* ---------------- Khởi động ---------------- */
+try { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); } catch (e) { }
 function renderAll() { if (!C.videos) C.videos = []; if (!C.loai) C.loai = (C.report && C.report.loai) || 'kiemtra'; $('#notes').value = C.notes || ''; renderClips(); renderPhotos(); renderReport(); renderHeader(); outFiles = []; $('#fileList').innerHTML = ''; $('#expMsg').innerHTML = ''; $('#chatList').innerHTML = ''; }
 window.addEventListener('beforeunload', e => { if (fieldRec.on) { e.preventDefault(); e.returnValue = ''; } });
 (async () => {
