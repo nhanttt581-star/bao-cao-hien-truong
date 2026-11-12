@@ -303,6 +303,12 @@ a.btn{text-decoration:none}
     <input type="password" id="sKey" placeholder="AIza…" autocomplete="off">
     <div class="row" style="margin-top:8px"><button class="btn pri" id="btnTest" style="flex:1">Kiểm tra mã</button><button class="btn" id="btnShowKey">👁</button></div>
     <div id="keyMsg" style="margin-top:8px"></div>
+    <div class="card" style="background:#f0f6ff;box-shadow:none;margin:12px 0 4px">
+      <b>🔗 Cho người khác dùng chung mã này</b>
+      <div class="hint" style="margin:4px 0 8px">Tạo một link gửi qua Zalo. Người nhận bấm vào là dùng được ngay, không phải kết nối AI. Chỉ gửi người tin cậy: họ sẽ dùng chung lượt miễn phí của mã này.</div>
+      <button class="btn pri blk" id="btnShareKey">🔗 Tạo link cài sẵn & gửi</button>
+      <div id="shareKeyMsg" style="margin-top:8px"></div>
+    </div>
     <div class="hint">Mã chỉ lưu trên điện thoại này. Lưu ý: với gói miễn phí, Google có thể dùng dữ liệu gửi lên để cải thiện dịch vụ — không dùng cho nội dung mật.</div>
   </div>
 
@@ -37968,6 +37974,29 @@ $('#btnTest').onclick = async () => {
   } catch (e) { $('#keyMsg').innerHTML = `<div class="err">${esc(e.message)}</div>`; }
 };
 
+
+/* ---------------- Link cài sẵn mã AI (dùng chung) ---------------- */
+function setupLink() { return location.origin + location.pathname + '#ma=' + encodeURIComponent(S.key); }
+$('#btnShareKey').onclick = async () => {
+  if (!S.key) { $('#shareKeyMsg').innerHTML = '<div class="warn">Điện thoại này chưa có mã. Kết nối AI trước đã.</div>'; return; }
+  const url = setupLink();
+  const text = 'Link cài sẵn ứng dụng Báo cáo hiện trường (bấm vào là dùng được ngay):';
+  $('#shareKeyMsg').innerHTML = `<div class="ok">Đã tạo link. Nếu không tự mở Zalo, bấm <b>Sao chép</b> rồi dán vào Zalo.</div><div class="row" style="margin-top:6px"><input type="text" readonly value="${esc(url)}" style="flex:1;font-size:13px" id="skUrl"><button class="btn sm" id="skCopy">Sao chép</button></div>`;
+  $('#skCopy').onclick = async () => { try { await navigator.clipboard.writeText(url); toast('Đã sao chép link.'); } catch (e) { $('#skUrl').select(); toast('Nhấn giữ vào ô link → Sao chép.'); } };
+  if (navigator.share) { try { await navigator.share({ title: 'Báo cáo hiện trường', text, url }); } catch (e) { } }
+  else { try { await navigator.clipboard.writeText(url); toast('Đã sao chép link — dán vào Zalo để gửi.', 4000); } catch (e) { } }
+};
+// Mở bằng link cài sẵn: lưu mã rồi xóa mã khỏi thanh địa chỉ
+function takeKeyFromLink() {
+  const m = location.hash.match(/(?:^#|&)ma=([^&]+)/);
+  if (!m) return false;
+  const key = decodeURIComponent(m[1]).trim();
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; }
+  if (!/^AIza[\w-]{20,}$/.test(key)) { toast('Link cài sẵn bị lỗi mã — nhờ người gửi tạo lại link.', 6000); return false; }
+  S.key = key; saveS(); loadSettingsUI();
+  listModels(key).then(({ text, tts }) => { if (text.length) S.models = text; if (tts.length) S.ttsModels = tts; saveS(); }).catch(() => { });
+  return true;
+}
 /* ---------------- Khởi động ---------------- */
 function renderAll() { if (!C.videos) C.videos = []; if (!C.loai) C.loai = (C.report && C.report.loai) || 'kiemtra'; $('#notes').value = C.notes || ''; renderClips(); renderPhotos(); renderReport(); renderHeader(); outFiles = []; $('#fileList').innerHTML = ''; $('#expMsg').innerHTML = ''; $('#chatList').innerHTML = ''; }
 window.addEventListener('beforeunload', e => { if (fieldRec.on) { e.preventDefault(); e.returnValue = ''; } });
@@ -37975,7 +38004,9 @@ window.addEventListener('beforeunload', e => { if (fieldRec.on) { e.preventDefau
   loadSettingsUI();
   try { await loadCurrent(); } catch (e) { C = newCaseObj(); toast('Trình duyệt chặn lưu trữ — dữ liệu sẽ mất khi đóng trang.', 6000); }
   renderAll();
+  const fromLink = takeKeyFromLink();
   showTab(!S.key ? 'welcome' : (C.report ? 'report' : 'field'));
+  if (fromLink) toast('✅ Đã cài sẵn AI. Bấm nút đỏ và nói để bắt đầu.', 5000);
   if (!window.isSecureContext) toast('Hãy mở ứng dụng qua đường link https (không mở file trực tiếp) để dùng được micro.', 7000);
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => { });
   setTimeout(loadLame, 3000); // tải sẵn bộ nén MP3 khi còn sóng
