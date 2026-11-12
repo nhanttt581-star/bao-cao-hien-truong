@@ -37754,15 +37754,42 @@ function splitSentences(t) {
   for (const s of t.split(/(?<=[.;:!?])\s+/)) { if ((cur + ' ' + s).length > 220 && cur) { out.push(cur); cur = s; } else cur = cur ? cur + ' ' + s : s; }
   if (cur) out.push(cur); return out;
 }
-function stopReading() { reading = false; try { speechSynthesis.cancel(); } catch (e) { } $$('#doc .speaking').forEach(e => e.classList.remove('speaking')); $('#btnRead').textContent = '🔊 Nghe'; }
+function stopReading() { reading = false; if (aiPlaying) stopAiAudio(); try { speechSynthesis.cancel(); } catch (e) { } $$('#doc .speaking').forEach(e => e.classList.remove('speaking')); $('#btnRead').textContent = '🔊 Nghe'; }
 // iPhone/Safari: lệnh đọc phải chạy ngay trong lúc bấm, không được chờ (await) trước
 let ttsUnlocked = false;
 function unlockTTS() {
   if (ttsUnlocked || !('speechSynthesis' in window)) return;
   try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; u.lang = 'vi-VN'; speechSynthesis.speak(u); ttsUnlocked = true; } catch (e) { }
 }
-function readReport() {
-  if (reading) return stopReading();
+// Nút 🔊 Nghe: ưu tiên giọng AI đã chọn (giống file MP3); mất sóng/lỗi thì dùng giọng có sẵn của máy
+const aiAudio = new Audio(); aiAudio.preload = 'auto';
+const SILENT = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+let aiPlaying = false;
+function stopAiAudio() { aiPlaying = false; try { aiAudio.pause(); } catch (e) { } }
+aiAudio.onended = () => { if (aiPlaying) { aiPlaying = false; stopReading(); } };
+async function readReport() {
+  if (reading || aiPlaying) { stopAiAudio(); return stopReading(); }
+  // Mở khóa phát âm thanh ngay trong lúc bấm (iPhone)
+  try { aiAudio.src = SILENT; aiAudio.play().catch(() => { }); } catch (e) { }
+  if (S.key && navigator.onLine !== false) {
+    reading = true; $('#btnRead').textContent = '⏳ Đang tạo giọng…';
+    try {
+      ovAbort = new AbortController();
+      const blob = await makeMp3(ovAbort.signal); ovAbort = null;
+      if (!reading) return;
+      aiAudio.src = URL.createObjectURL(blob); aiPlaying = true;
+      $('#btnRead').textContent = '⏹ Dừng';
+      await aiAudio.play();
+      return;
+    } catch (e) {
+      ovAbort = null; aiPlaying = false; reading = false;
+      if (/hủy/.test(e.message)) return stopReading();
+      toast('Chưa tạo được giọng AI (' + e.message.slice(0, 60) + ') — đọc bằng giọng của máy.', 4000);
+    }
+  }
+  readDevice();
+}
+function readDevice() {
   if (!('speechSynthesis' in window)) return toast('Máy không hỗ trợ đọc. Sang bước 3 Gửi để nghe file MP3.', 4000);
   try { speechSynthesis.cancel(); } catch (e) { }
   const v = viVoice();
@@ -38107,6 +38134,7 @@ window.addEventListener('beforeunload', e => { if (fieldRec.on) { e.preventDefau
   setTimeout(loadLame, 3000); // tải sẵn bộ nén MP3 khi còn sóng
 })();
 $('#withClip').onchange = () => renderFiles();
+['#sVoice', '#sPace'].forEach(id => $(id).addEventListener('change', () => { S.voice = $('#sVoice').value; S.pace = $('#sPace').value; saveS(); if (C) { C.mp3Stale = true; saveCase(); } }));
 </script>
 </body>
 </html>
